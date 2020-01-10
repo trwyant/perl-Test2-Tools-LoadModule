@@ -25,15 +25,15 @@ our %EXPORT_TAGS = (
 
 use constant MODNAME_UNDEF	=> 'Module name must be defined';
 
-# The following cribbed shamelessly from version::regex 0.9924. The only
-# change is to remove undef as a legal version number.
-use constant LAX_VERSION	=> qr/(?^x: (?^x:
-	v (?^:[0-9]+) (?: (?^:\.[0-9]+)+ (?^:_[0-9]+)? )?
+# The following cribbed shamelessly from version::regex, after being
+# munged to suit by tools/version_regex
+use constant LAX_VERSION	=> qr/(?x: (?x:
+	v (?-x:[0-9]+) (?-x: (?-x:\.[0-9]+)+ (?-x:_[0-9]+)? )?
 	|
-	(?^:[0-9]+)? (?^:\.[0-9]+){2,} (?^:_[0-9]+)?
-    ) | (?^x: (?^:[0-9]+) (?: (?^:\.[0-9]+) | \. )? (?^:_[0-9]+)?
+	(?-x:[0-9]+)? (?-x:\.[0-9]+){2,} (?-x:_[0-9]+)?
+    ) | (?x: (?-x:[0-9]+) (?-x: (?-x:\.[0-9]+) | \. )? (?-x:_[0-9]+)?
 	|
-	(?^:\.[0-9]+) (?^:_[0-9]+)?
+	(?-x:\.[0-9]+) (?-x:_[0-9]+)?
     ) )/;
 
 sub require_module_ok ($;$@) {	## no critic (ProhibitSubroutinePrototypes)
