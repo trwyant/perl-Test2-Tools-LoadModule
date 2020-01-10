@@ -11,10 +11,11 @@ use Test2::Util ();
 
 our $VERSION = '0.000_001';
 
-our @EXPORT = qw{
+our @EXPORT =	## no critic (ProhibitAutomaticExportation)
+qw{
     require_module_ok
     use_module_ok
-};	## no critic (ProhibitAutomaticExportation)
+};
 
 our @EXPORT_OK = @EXPORT;
 
@@ -69,7 +70,7 @@ EOD
 	map { $_ eq '-EE' ? $@ : $_ } @diag );
 }
 
-sub use_module_ok ($;@) {
+sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     my ( $module, @import ) = @_;
 
     local $@ = undef;
