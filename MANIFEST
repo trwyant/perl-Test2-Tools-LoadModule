@@ -2,6 +2,7 @@ Build.PL
 Changes
 inc/My/Module/Build.pm
 inc/My/Module/Meta.pm
+inc/My/Module/Test.pm
 lib/Test2/Tools/RequireModule.pm
 LICENSES/Artistic
 LICENSES/Copying

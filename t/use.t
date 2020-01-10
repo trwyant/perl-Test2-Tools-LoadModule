@@ -11,35 +11,11 @@ BEGIN {
     # The above loaded our module but did not import
     CLASS->import();
 }
-use Test2::Util qw{ pkg_to_file };
 
-BEGIN {
-    # This is deeper magic than I like, but it lets me get rid of
-    # Test::Without::Module as a testing dependency. The idea is that
-    # Test2::Tools::RequireModule only sees t/lib/, but everyone else
-    # can still load whatever they want. Modules already loaded at this
-    # point will still appear to be loaded, no matter who requests them.
-    unshift @INC,
-	sub {
-	    my $lvl = 0;
-	    while ( my $pkg = caller $lvl++ ) {
-		CLASS eq $pkg
-		    or next;
-		my $fh;
-		open $fh, '<', "t/lib/$_[1]"
-		    and return ( \'', $fh );
-		croak "Can't locate $_[1] in \@INC";
-	    }
-	    return;
-	},
-}
+use lib qw{ inc };
+use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
 use constant USE_MODULE_OK	=> "${CLASS}::use_module_ok";
-
-# NOTE that if there are no diagnostics, info() returns undef, not an
-# empty array. I find this nowhere documented, so I am checking for
-# both.
-use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
 
 my $file;
 
@@ -152,7 +128,6 @@ BEGIN {
 
 {
     my $module = 'Bogus0';
-    my $fn = pkg_to_file( $module );
     my $line;
 
     like
@@ -165,8 +140,7 @@ BEGIN {
 		call name	=> "use $module";
 		call info	=> array {
 		    item object {
-			call details	=>
-				match qr<\ACan't locate $fn in \@INC\b>sm;
+			call details	=> cant_locate( $module );
 		    };
 		    end;
 		};
