@@ -13,8 +13,8 @@ use My::Module::Meta;
 my $meta = My::Module::Meta->new();
 
 my %args = (
-    NAME => 'Test2::Tools::RequireModule',
-    VERSION_FROM => 'lib/Test2/Tools/RequireModule.pm',
+    NAME => 'Test2::Tools::LoadModule',
+    VERSION_FROM => 'lib/Test2/Tools/LoadModule.pm',
     PREREQ_PM => $meta->requires(),
     PL_FILES => {},	# Prevent old MakeMaker from running Build.PL
     'dist' => {COMPRESS => 'gzip', SUFFIX => 'gz'},

@@ -32,7 +32,7 @@ Present - Module whose only purpose is to be loadable
 
 =head1 DESCRIPTION
 
-This Perl module is used for testing C<Test2::Tools::RequireModule>.
+This Perl module is used for testing C<Test2::Tools::LoadModule>.
 Its sole function is to be loaded correctly.
 
 =head1 SUBROUTINES

@@ -39,14 +39,14 @@ sub meta_merge {
 	dynamic_config	=> 1,
 	resources	=> {
 	    bugtracker	=> {
-		web	=> 'https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-RequireModule',
+		web	=> 'https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-LoadModule',
 		mailto  => 'wyant@cpan.org',
 	    },
 	    license	=> 'http://dev.perl.org/licenses/',
 	    repository	=> {
 		type	=> 'git',
-		url	=> 'git://github.com/trwyant/perl-Test2-Tools-RequireModule.git',
-		web	=> 'https://github.com/trwyant/perl-Test2-Tools-RequireModule',
+		url	=> 'git://github.com/trwyant/perl-Test2-Tools-LoadModule.git',
+		web	=> 'https://github.com/trwyant/perl-Test2-Tools-LoadModule',
 	    },
 	},
 	@extra,
@@ -89,7 +89,7 @@ __END__
 
 =head1 NAME
 
-My::Module::Meta - Information needed to build Test2::Tools::RequireModule
+My::Module::Meta - Information needed to build Test2::Tools::LoadModule
 
 =head1 SYNOPSIS
 
@@ -102,8 +102,8 @@ My::Module::Meta - Information needed to build Test2::Tools::RequireModule
 
 =head1 DETAILS
 
-This module centralizes information needed to build C<Test2::Tools::RequireModule>. It
-is private to the C<Test2::Tools::RequireModule> package, and may be changed or
+This module centralizes information needed to build C<Test2::Tools::LoadModule>. It
+is private to the C<Test2::Tools::LoadModule> package, and may be changed or
 retracted without notice.
 
 =head1 METHODS
@@ -122,7 +122,7 @@ This method instantiates the class.
  print Dump( $meta->build_requires() );
 
 This method computes and returns a reference to a hash describing the
-modules required to build the C<Test2::Tools::RequireModule> package, suitable for
+modules required to build the C<Test2::Tools::LoadModule> package, suitable for
 use in a F<Build.PL> C<build_requires> key, or a F<Makefile.PL>
 C<< {META_MERGE}->{build_requires} >> or C<BUILD_REQUIRES> key.
 
@@ -153,7 +153,7 @@ reference). If it can not load the required module, it returns nothing.
  print Dump( $meta->requires() );
 
 This method computes and returns a reference to a hash describing
-the modules required to run the C<Test2::Tools::RequireModule>
+the modules required to run the C<Test2::Tools::LoadModule>
 package, suitable for use in a F<Build.PL> C<requires> key, or a
 F<Makefile.PL> C<PREREQ_PM> key. Any additional arguments will be
 appended to the generated hash. In addition, unless

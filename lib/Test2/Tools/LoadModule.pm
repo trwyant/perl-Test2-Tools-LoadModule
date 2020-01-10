@@ -1,4 +1,4 @@
-package Test2::Tools::RequireModule;
+package Test2::Tools::LoadModule;
 
 use 5.008001;
 
@@ -119,13 +119,13 @@ __END__
 
 =head1 NAME
 
-Test2::Tools::RequireModule - Test whether a module can be successfully required.
+Test2::Tools::LoadModule - Test whether a module can be successfully required.
 
 =head1 SYNOPSIS
 
  use Test2::V0;
  use Test2::Plugin::BaleOnFail;
- use Test2::Tools::RequireModule;
+ use Test2::Tools::LoadModule;
  
  require_module_ok( 'My::Module' );
  

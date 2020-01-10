@@ -5,7 +5,7 @@ eg/basic.t
 inc/My/Module/Build.pm
 inc/My/Module/Meta.pm
 inc/My/Module/Test.pm
-lib/Test2/Tools/RequireModule.pm
+lib/Test2/Tools/LoadModule.pm
 LICENSES/Artistic
 LICENSES/Copying
 Makefile.PL

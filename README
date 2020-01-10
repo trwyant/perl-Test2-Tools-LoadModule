@@ -1,4 +1,4 @@
-Test2-Tools-RequireModule is Copyright (C) 2019-2020 by Thomas R. Wyant, III
+Test2-Tools-LoadModule is Copyright (C) 2019-2020 by Thomas R. Wyant, III
 
 DESCRIPTION
 
@@ -11,8 +11,8 @@ cpanp, or cpanm. ActivePerl users can try their ppm.
 
 Failing that, you can use one of the two usual incantations:
 
-    gunzip Test2-Tools-RequireModule-9.999.tar.gz
-    tar -xf Test2-Tools-RequireModule-9.999.tar
+    gunzip Test2-Tools-LoadModule-9.999.tar.gz
+    tar -xf Test2-Tools-LoadModule-9.999.tar
     perl Makefile.PL
     make
     make test
@@ -20,8 +20,8 @@ Failing that, you can use one of the two usual incantations:
 
 or
 
-    gunzip Test2-Tools-RequireModule-9.999.tar.gz
-    tar -xf Test2-Tools-RequireModule-9.999.tar
+    gunzip Test2-Tools-LoadModule-9.999.tar.gz
+    tar -xf Test2-Tools-LoadModule-9.999.tar
     perl Build.PL
     ./Build
     ./Build test

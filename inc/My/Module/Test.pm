@@ -7,7 +7,7 @@ use warnings;
 
 use Carp qw{ croak };
 use Exporter ();
-use Test2::V0 -target => 'Test2::Tools::RequireModule';
+use Test2::V0 -target => 'Test2::Tools::LoadModule';
 use Test2::Util qw{ pkg_to_file };
 
 our $VERSION = '0.000_001';
@@ -32,7 +32,7 @@ sub cant_locate {
 {
     # The @INC stuff is deeper magic than I like, but it lets me get rid
     # of Test::Without::Module as a testing dependency. The idea is that
-    # Test2::Tools::RequireModule only sees t/lib/, but everyone else
+    # Test2::Tools::LoadModule only sees t/lib/, but everyone else
     # can still load whatever they want. Modules already loaded at this
     # point will still appear to be loaded, no matter who requests them.
     my %special = (
@@ -80,7 +80,7 @@ __END__
 
 =head1 NAME
 
-My::Module::Test - Test support for Test2::Tools::RequireModule
+My::Module::Test - Test support for Test2::Tools::LoadModule
 
 =head1 SYNOPSIS
 
@@ -93,11 +93,11 @@ My::Module::Test - Test support for Test2::Tools::RequireModule
 
 =head1 DESCRIPTION
 
-This module is B<private> to the C<Test2-Tools-RequireModule>
+This module is B<private> to the C<Test2-Tools-LoadModule>
 distribution. It can be changed or revoked without notice. Documentation
 is for the benefit of the author only.
 
-This module provides test support for the C<Test2-Tools-RequireModule>
+This module provides test support for the C<Test2-Tools-LoadModule>
 distribution.
 
 =head1 EXPORTS
@@ -112,9 +112,9 @@ The following things are available for export:
 
 This option causes a code reference to be prepended to C<@INC>. This
 code reference examines the call stack, and if it finds
-L<Test2::Tools::RequireModule|Test2::Tools::RequireModule> returns the
+L<Test2::Tools::LoadModule|Test2::Tools::LoadModule> returns the
 requested file from F<t/lib/>, or an error if the file is not found. If
-L<Test2::Tools::RequireModule|Test2::Tools::RequireModule> is not found
+L<Test2::Tools::LoadModule|Test2::Tools::LoadModule> is not found
 on the call stack, nothing is returned, which causes Perl's normal
 module-loading machinery to be invoked.
 

@@ -6,7 +6,7 @@ use strict;
 use warnings;
 
 use Carp qw{ croak };
-use Test2::V0 -target => 'Test2::Tools::RequireModule';
+use Test2::V0 -target => 'Test2::Tools::LoadModule';
 BEGIN {
     # The above loaded our module but did not import
     CLASS->import();

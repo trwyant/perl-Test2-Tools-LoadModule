@@ -27,7 +27,7 @@ __END__
 
 =head1 NAME
 
-My::Module::Build - Extend Module::Build for Test2::Tools::RequireModule
+My::Module::Build - Extend Module::Build for Test2::Tools::LoadModule
 
 =head1 SYNOPSIS
 

@@ -21,4 +21,4 @@ CVS/
 ^tools/
 ^TODO$
 ^xt/author/optionals/
-^Test2-Tools-RequireModule
+^Test2-Tools-LoadModule

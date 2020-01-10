@@ -71,7 +71,7 @@ This option displays the version of this script. The script then exits.
 This Perl script loads L<version::regex|version::regex>, serializes
 C<$version::regex::LAX>, modifies it to suit, and generates code to
 include it into
-L<Text2::Tools::RequireModule|Text2::Tools::RequireModule>.
+L<Text2::Tools::LoadModule|Text2::Tools::LoadModule>.
 
 The only modification needed to the underlying regex is to remove the
 leading C< undef | >. But under any modern Perl, serialization

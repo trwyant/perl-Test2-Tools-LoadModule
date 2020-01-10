@@ -10,11 +10,11 @@ use Test2::Plugin::BailOnFail;
 BEGIN {
     local $@ = undef;
     ok eval {
-	require Test2::Tools::RequireModule;
+	require Test2::Tools::LoadModule;
 	1;
-    }, 'Can load Test2::Tools::RequireModule';
+    }, 'Can load Test2::Tools::LoadModule';
 
-    Test2::Tools::RequireModule->import();
+    Test2::Tools::LoadModule->import();
 }
 
 imported_ok qw{ require_module_ok use_module_ok };

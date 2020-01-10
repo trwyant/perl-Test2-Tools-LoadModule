@@ -24,7 +24,7 @@ BogusVersion - Module whose only purpose is to fail a version check.
 
 =head1 DESCRIPTION
 
-This Perl module is used for testing C<Test2::Tools::RequireModule>.
+This Perl module is used for testing C<Test2::Tools::LoadModule>.
 Its sole function is to fail to be loaded because the required module
 version is greater than the version this module implements.
 

@@ -5,7 +5,7 @@ use warnings;
 
 use Test2::V0 -target => 'Text::Wrap';	# TODO insert your module name
 use Test2::Plugin::BailOnFail;	# Abort entire test run on first failure
-use Test2::Tools::RequireModule;
+use Test2::Tools::LoadModule;
 
 # TODO modify or remove import list as appropriate.
 use_module_ok CLASS, qw{ wrap fill $columns $huge };
