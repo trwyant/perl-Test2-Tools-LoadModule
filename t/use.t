@@ -17,13 +17,9 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
 use constant USE_MODULE_OK	=> "${CLASS}::use_module_ok";
 
-my $file;
+my $file = __FILE__;	# So we can interpolate it.
 
-BEGIN {
-    $file = __FILE__;	# So we can interpolate it.
-}
-
-BEGIN {
+{
     my $line;
     like
 	intercept {
@@ -45,7 +41,7 @@ BEGIN {
 	"use previously-loaded module $CLASS";
 }
 
-BEGIN {
+{
     my $line;
     my $module = 'Present';
 
@@ -56,11 +52,11 @@ BEGIN {
 	array {
 
 	    event Pass => sub {
-		call name		=> "use $module";
-		call info		=> CHECK_MISSING_INFO;
-		prop file		=> __FILE__;
+		call name	=> "use $module";
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
-		prop line		=> $line;
+		prop line	=> $line;
 		prop subname	=> USE_MODULE_OK;
 	    };
 
@@ -69,12 +65,10 @@ BEGIN {
 	"use not-previously-loaded module $module";
 }
 
-BEGIN {
-    imported_ok qw{ and_accounted_for };
-    not_imported_ok qw{ under_the_tree };	# Should not have this yet.
-}
+imported_ok qw{ and_accounted_for };
+not_imported_ok qw{ under_the_tree };	# Should not have this yet.
 
-BEGIN {
+{
     my $line;
     my $module = 'Present';
 
@@ -85,11 +79,11 @@ BEGIN {
 	array {
 
 	    event Pass => sub {
-		call name		=> "use $module qw{ under_the_tree }";
-		call info		=> CHECK_MISSING_INFO;
-		prop file		=> __FILE__;
+		call name	=> "use $module qw{ under_the_tree }";
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
-		prop line		=> $line;
+		prop line	=> $line;
 		prop subname	=> USE_MODULE_OK;
 	    };
 
@@ -98,9 +92,7 @@ BEGIN {
 	"use previously-loaded module $module with export list";
 }
 
-BEGIN {
-    imported_ok qw{ under_the_tree };
-}
+imported_ok qw{ under_the_tree };
 
 {
     local $@ = 'Ignore this';
