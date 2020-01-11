@@ -19,7 +19,7 @@ my %args = (
     PL_FILES => {},	# Prevent old MakeMaker from running Build.PL
     'dist' => {COMPRESS => 'gzip', SUFFIX => 'gz'},
     AUTHOR => 'Thomas R. Wyant, III F<wyant at cpan dot org>',
-    ABSTRACT => 'Test whether a module can be successfully required.',
+    ABSTRACT => 'Test whether a module can be successfully loaded.',
 );
 
 $mmv >= 6.31

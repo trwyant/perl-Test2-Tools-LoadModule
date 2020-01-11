@@ -119,7 +119,7 @@ __END__
 
 =head1 NAME
 
-Test2::Tools::LoadModule - Test whether a module can be successfully required.
+Test2::Tools::LoadModule - Test whether a module can be successfully loaded.
 
 =head1 SYNOPSIS
 
@@ -134,13 +134,14 @@ Test2::Tools::LoadModule - Test whether a module can be successfully required.
 =head1 DESCRIPTION
 
 This L<Test2::Tools|Test2::Tools> module provides functionality
-analogous to L<Test::More|Test::More>'s C<require_ok()>.
+analogous to L<Test::More|Test::More>'s C<require_ok()> and C<use_ok()>.
 
 L<Test2::Manual::Testing::Migrating|Test2::Manual::Testing::Migrating>
 deals with migrating from L<Test::More|Test::More> to
 L<Test2::V0|Test2::V0>. It states that instead of C<require_ok()> you
 should simply use the C<require()> built-in, since a failure to load the
-required module or file will cause the test script to fail anyway.
+required module or file will cause the test script to fail anyway. The
+same is said for C<use_ok()>.
 
 In my perhaps-not-so-humble opinion this overlooks the fact that if you
 can not load the module you are testing, it may make sense to abort not
@@ -172,12 +173,12 @@ achieve that effect on a per-test basis using something like
 Note that if the test succeeds the specified module has in fact been
 loaded.
 
-This subroutine takes a second optional argument which is the name of
+This subroutine takes an optional second argument which is the name of
 the test. If unspecified or specified as C<undef> or C<''>, this
-defaults to C<"Require $module_name">. Third and subsequent optional
-arguments are emitted as diagnostics if the test fails. If you wish to
-output C<$@> as a diagnostic you must specify the string C<'-EE'> (for
-eval error) as a diagnostic at the point you want C<$@> to appear, e.g.
+defaults to C<"Require $module_name">. Subsequent optional arguments are
+emitted as diagnostics if the test fails. If you wish to output C<$@> as
+a diagnostic you must specify the string C<'-EE'> (for eval error) as a
+diagnostic at the point you want C<$@> to appear, e.g.
 
  require_module_ok 'Fubar', 'Can\'t load Fubar', '-EE';
 
@@ -186,12 +187,11 @@ stash. In other words, when or whether this happens is an implementation
 detail that may change without notice. See the L<require> documentation
 for more information. I<Caveat coder.>
 
-Invalid module names are unsupported. That is, no attempt is made to
-trap them, so the errors you get (if any) are totally dependent on the
-underlying Perl, OS, and file system, and maybe even the phase of the
-Moon. Purely as a convenience to this module, an undefined module name
-is transformed to C<''>. This is still an error, but makes the code a
-little simpler.
+Undefined module names are trapped as a convenience to this module.
+Otherwise, invalid module names are unsupported. That is, no attempt is
+made to trap them, so the errors you get (if any) are totally dependent
+on the underlying Perl, OS, and file system, and maybe even the phase of
+the Moon.
 
 The prototype is C<($;$@)>, so you could do, if you chose,
 
@@ -225,7 +225,8 @@ unless the whole thing is called inside a C<BEGIN> block, so:
  # because the call to use_module_ok() was done
  # inside a BEGIN block.
 
-There is no way to specify a C<use> without importing.
+There is no way to specify a C<use> without importing. If no explicit
+import list is given the default import is done.
 
 There is also no way to specify the name of the test. The name will be,
 willy-nilly, the C<use> statement actually issued.
@@ -235,7 +236,8 @@ Failure will result in a single diagnostic, which is the contents of
 C<$@>.
 
 If the first optional argument looks like a version number it will be
-treated as such.
+treated as such. The regular expression to do this was lifted from
+C<$version::regex::LAX>.
 
 The prototype is C<$;@>.
 

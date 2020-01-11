@@ -15,7 +15,7 @@ my $meta = My::Module::Meta->new();
 
 my %args = (
     dist_author => 'Thomas R. Wyant, III F<wyant at cpan dot org>',
-    dist_abstract => 'Test whether a module can be successfully required.',
+    dist_abstract => 'Test whether a module can be successfully loaded.',
     module_name => 'Test2::Tools::LoadModule',
     build_requires => $meta->build_requires(),
     requires => $meta->requires(
