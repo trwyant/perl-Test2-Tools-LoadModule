@@ -106,17 +106,19 @@ sub use_module_or_skip_all ($;@) {	## no critic (ProhibitSubroutinePrototypes)
 
     local $@ = undef;
 
-    my $ctx = Test2::API::context();
-
     defined $module
-	or do {
-	$ctx->release();
-	croak MODNAME_UNDEF;
-    };
+	or croak MODNAME_UNDEF;
 
     my $use = _build_use( $module, @import );
 
-    my ( $pkg, $file, $line ) = $ctx->trace()->call();
+    my ( $pkg, $file, $line );
+    {
+	my $lvl = 0;
+	while ( ( $pkg, $file, $line ) = caller $lvl++ ) {
+	    $file =~ m/ \A [(] eval \b /smx	# )
+		or last;
+	}
+    }
 
     # We need the stringy eval() so we can mess with Perl's concept of
     # what the current file and line number are for the purpose of
@@ -128,11 +130,9 @@ package $pkg;
 $use;
 1;
 EOD
-	and do {
-	$ctx->release();
-	return;
-    };
+	and return;
 
+    my $ctx = Test2::API::context();
     $ctx->plan( 0, SKIP => "Unable to $use" );
     $ctx->release();
     return;
@@ -195,9 +195,16 @@ C<require_ok()> means there is no analogue to
 
 This module restores that functionality.
 
+B<Note> that if you are using this module with testing tools that are
+not based on L<Test2::V0|Test2::V0> you may have to tweak the load order
+of modules. For example, I have found it necessary to load
+L<Test::Builder|Test::Builder> before L<Test2::V0|Test2::V0> if I am
+using C<use_module_or_skip_all()> to load
+L<Test::Perl::Critic|Test::Perl::Critic> to avoid warnings.
+
 =head1 SUBROUTINES
 
-The following subroutine is exported by default.
+The following subroutines are exported by default.
 
 =head2 require_module_ok
 

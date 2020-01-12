@@ -18,7 +18,7 @@ t/lib/BogusVersion.pm
 t/lib/Present.pm
 t/require.t
 t/use.t
-t/use_or_skip.t
+t/use_or_skip_all.t
 xt/author/changes.t
 xt/author/critic.t
 xt/author/executable.t
