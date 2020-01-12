@@ -67,8 +67,7 @@ EOD
 
     chomp $@;	# Note that this was localized above
 
-    return $ctx->fail_and_release( $name,
-	map { $_ eq '-EE' ? $@ : $_ } @diag );
+    return $ctx->fail_and_release( $name, @diag, $@ );
 }
 
 sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
@@ -219,11 +218,7 @@ loaded.
 This subroutine takes an optional second argument which is the name of
 the test. If unspecified or specified as C<undef> or C<''>, this
 defaults to C<"Require $module_name">. Subsequent optional arguments are
-emitted as diagnostics if the test fails. If you wish to output C<$@> as
-a diagnostic you must specify the string C<'-EE'> (for eval error) as a
-diagnostic at the point you want C<$@> to appear, e.g.
-
- require_module_ok 'Fubar', 'Can\'t load Fubar', '-EE';
+emitted as diagnostics if the test fails. C<$@> will be appended.
 
 This subroutine does not support the autovivification of the module's
 stash. In other words, when or whether this happens is an implementation

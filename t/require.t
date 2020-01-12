@@ -95,31 +95,7 @@ my $file = __FILE__;	# So we can interpolate it.
 
     like
 	intercept {
-	    require_module_ok( $module ); $line = __LINE__;
-	},
-	array {
-
-	    event Fail => sub {
-		call name	=> "Require $module";
-		call info	=> CHECK_MISSING_INFO;
-		prop file	=> __FILE__;
-		prop package	=> __PACKAGE__;
-		prop line	=> $line;
-		prop subname	=> REQUIRE_MODULE_OK;
-	    };
-
-	    end;
-	},
-	"Require unloadable module $module";
-}
-
-{
-    my $module = 'Bogus0';
-    my $line;
-
-    like
-	intercept {
-	    require_module_ok( $module, undef, '-EE' ); $line = __LINE__;
+	    require_module_ok( $module, undef ); $line = __LINE__;
 	},
 	array {
 
@@ -148,7 +124,7 @@ my $file = __FILE__;	# So we can interpolate it.
 
     like
 	intercept {
-	    require_module_ok( $module, undef, '-EE', 'Fubar' ); $line = __LINE__;
+	    require_module_ok( $module, undef, 'Fubar' ); $line = __LINE__;
 	},
 	array {
 
@@ -156,10 +132,10 @@ my $file = __FILE__;	# So we can interpolate it.
 		call name	=> "Require $module";
 		call info	=> array {
 		    item object {
-			call details	=> cant_locate( $module );
+			call details	=> 'Fubar';
 		    };
 		    item object {
-			call details	=> 'Fubar';
+			call details	=> cant_locate( $module );
 		    };
 		    end;
 		};
