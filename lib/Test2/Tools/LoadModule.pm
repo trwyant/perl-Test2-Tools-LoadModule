@@ -38,6 +38,7 @@ use constant LAX_VERSION	=> qr/(?x: (?x:
 	(?-x:\.[0-9]+) (?-x:_[0-9]+)?
     ) )/;
 
+
 sub require_module_ok ($;$@) {	## no critic (ProhibitSubroutinePrototypes)
     my ( $module, $name, @diag ) = @_;
 
@@ -52,23 +53,14 @@ sub require_module_ok ($;$@) {	## no critic (ProhibitSubroutinePrototypes)
 	and '' ne $name
 	or $name = "Require $module";
 
-    my ( $pkg, $file, $line ) = $ctx->trace()->call();
-
-    # We need the stringy eval() so we can mess with Perl's concept of
-    # what the current file and line number are for the purpose of
-    # formatting the exception.
-    eval <<"EOD"	## no critic (ProhibitStringyEval)
-package $pkg;
-#line $line "$file"
-require $module;
-1;
-EOD
+    _eval_in_pkg( "require $module", $ctx->trace()->call() )
 	and return $ctx->pass_and_release( $name );
 
     chomp $@;	# Note that this was localized above
 
     return $ctx->fail_and_release( $name, @diag, $@ );
 }
+
 
 sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     my ( $module, @import ) = @_;
@@ -82,24 +74,14 @@ sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
 
     my $use = _build_use( $module, @import );
 
-    my ( $pkg, $file, $line ) = $ctx->trace()->call();
-
-    # We need the stringy eval() so we can mess with Perl's concept of
-    # what the current file and line number are for the purpose of
-    # formatting the exception, AND as a convenience to get symbols
-    # imported.
-    eval <<"EOD"	## no critic (ProhibitStringyEval)
-package $pkg;
-#line $line "$file"
-$use;
-1;
-EOD
+    _eval_in_pkg( $use, $ctx->trace()->call() )
 	and return $ctx->pass_and_release( $use );
 
     chomp $@;	# Note that this was localized above
 
     return $ctx->fail_and_release( $use, $@ );
 }
+
 
 sub use_module_or_skip_all ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     my ( $module, @import ) = @_;
@@ -111,25 +93,7 @@ sub use_module_or_skip_all ($;@) {	## no critic (ProhibitSubroutinePrototypes)
 
     my $use = _build_use( $module, @import );
 
-    my ( $pkg, $file, $line );
-    {
-	my $lvl = 0;
-	while ( ( $pkg, $file, $line ) = caller $lvl++ ) {
-	    $file =~ m/ \A [(] eval \b /smx	# )
-		or last;
-	}
-    }
-
-    # We need the stringy eval() so we can mess with Perl's concept of
-    # what the current file and line number are for the purpose of
-    # formatting the exception, AND as a convenience to get symbols
-    # imported.
-    eval <<"EOD"	## no critic (ProhibitStringyEval)
-package $pkg;
-#line $line "$file"
-$use;
-1;
-EOD
+    _eval_in_pkg( $use, _get_call_info() )
 	and return;
 
     my $ctx = Test2::API::context();
@@ -137,6 +101,7 @@ EOD
     $ctx->release();
     return;
 }
+
 
 sub _build_use {
     my ( $module, @import ) = @_;
@@ -154,6 +119,38 @@ sub _build_use {
 
     return $use;
 }
+
+
+sub _eval_in_pkg {
+    my ( $eval, $pkg, $file, $line ) = @_;
+
+    # We need the stringy eval() so we can mess with Perl's concept of
+    # what the current file and line number are for the purpose of
+    # formatting the exception, AND as a convenience to get symbols
+    # imported.
+    # IM(NS)HO the RequireCheckingReturnValueOfEval annotation
+    # represents a bug in
+    # Perl::Critic::Policy::ErrorHandling::RequireCheckingReturnValueOfEval
+    return eval <<"EOD"	## no critic (ProhibitStringyEval,RequireCheckingReturnValueOfEval)
+package $pkg;
+#line $line "$file"
+$eval;
+1;
+EOD
+}
+
+
+sub _get_call_info {
+    my $lvl = 0;
+    while ( my @info = caller $lvl++ ) {
+	__PACKAGE__ eq $info[0]
+	    and next;
+	$info[1] =~ m/ \A [(] eval \b /smx	# )
+	    or return @info;
+    }
+    confess 'Bug - Unable to determine caller';
+}
+
 
 1;
 
