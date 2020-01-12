@@ -5,6 +5,7 @@ use 5.008001;
 use strict;
 use warnings;
 
+use Carp;
 use Exporter qw{ import };
 use Test2::API ();
 use Test2::Util ();
@@ -15,6 +16,7 @@ our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{
     require_module_ok
     use_module_ok
+    use_module_or_skip_all
 };
 
 our @EXPORT_OK = @EXPORT;
@@ -50,8 +52,7 @@ sub require_module_ok ($;$@) {	## no critic (ProhibitSubroutinePrototypes)
 	and '' ne $name
 	or $name = "Require $module";
 
-    my $trace = $ctx->trace();
-    my ( $pkg, $file, $line ) = $trace->call();
+    my ( $pkg, $file, $line ) = $ctx->trace()->call();
 
     # We need the stringy eval() so we can mess with Perl's concept of
     # what the current file and line number are for the purpose of
@@ -80,21 +81,9 @@ sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     defined $module
 	or return $ctx->fail_and_release( MODNAME_UNDEF );
 
-    my $name;
+    my $use = _build_use( $module, @import );
 
-    # TODO crib regex from version::regex
-
-    if ( @import && $import[0] =~ LAX_VERSION ) {
-	my $version = shift @import;
-	$name = "use $module $version";
-    } else {
-	$name = "use $module";
-    }
-    @import
-	and $name .= " qw{ @import }";
-
-    my $trace = $ctx->trace();
-    my ( $pkg, $file, $line ) = $trace->call();
+    my ( $pkg, $file, $line ) = $ctx->trace()->call();
 
     # We need the stringy eval() so we can mess with Perl's concept of
     # what the current file and line number are for the purpose of
@@ -103,14 +92,68 @@ sub use_module_ok ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     eval <<"EOD"	## no critic (ProhibitStringyEval)
 package $pkg;
 #line $line "$file"
-$name;
+$use;
 1;
 EOD
-	and return $ctx->pass_and_release( $name );
+	and return $ctx->pass_and_release( $use );
 
     chomp $@;	# Note that this was localized above
 
-    return $ctx->fail_and_release( $name, $@ );
+    return $ctx->fail_and_release( $use, $@ );
+}
+
+sub use_module_or_skip_all ($;@) {	## no critic (ProhibitSubroutinePrototypes)
+    my ( $module, @import ) = @_;
+
+    local $@ = undef;
+
+    my $ctx = Test2::API::context();
+
+    defined $module
+	or do {
+	$ctx->release();
+	croak MODNAME_UNDEF;
+    };
+
+    my $use = _build_use( $module, @import );
+
+    my ( $pkg, $file, $line ) = $ctx->trace()->call();
+
+    # We need the stringy eval() so we can mess with Perl's concept of
+    # what the current file and line number are for the purpose of
+    # formatting the exception, AND as a convenience to get symbols
+    # imported.
+    eval <<"EOD"	## no critic (ProhibitStringyEval)
+package $pkg;
+#line $line "$file"
+$use;
+1;
+EOD
+	and do {
+	$ctx->release();
+	return;
+    };
+
+    $ctx->plan( 0, SKIP => "Unable to $use" );
+    $ctx->release();
+    return;
+}
+
+sub _build_use {
+    my ( $module, @import ) = @_;
+
+    my $use;
+    if ( @import && $import[0] =~ LAX_VERSION ) {
+	my $version = shift @import;
+	$use = "use $module $version";
+    } else {
+	$use = "use $module";
+    }
+
+    @import
+	and $use .= " qw{ @import }";
+
+    return $use;
 }
 
 1;
@@ -214,9 +257,12 @@ This subroutine tests whether the given module can be loaded. Arguments
 after the first represent an optional version and an import list. The
 test succeeds if the module can be C<use()>-ed and the import list can
 in fact be imported. If no import list is specified the default import
-will be done. The import will be done into the name space that issued
-the call, but B<note> that subsequent code will not see the import
-unless the whole thing is called inside a C<BEGIN> block, so:
+will be done. If you wish no import to be done the import list should
+consist only of the string C<'()'>.
+
+The import will be done into the name space that issued the call, but
+B<note> that subsequent code will not see the import unless the whole
+thing is called inside a C<BEGIN> block, so:
 
  BEGIN {
      use_module_ok( 'My::Module', ':all' );
@@ -240,6 +286,19 @@ treated as such. The regular expression to do this was lifted from
 C<$version::regex::LAX>.
 
 The prototype is C<$;@>.
+
+=head2 use_module_or_skip_all
+
+ use_module_or_skip_all( 'My::Module', ':all' );
+
+This subroutine has the same signature as
+L<use_module_ok()|/use_module_ok>, but it does B<not> perform a test.
+Instead it loads the given module and performs the specified import. If
+the load and import succeed, it simply returns. If either fails it
+issues a C<skip_all()> with the message C<'Failed to ...'>, where the
+ellipsis is the actual C<use()> issued.
+
+If the module name is C<undef>, this subroutine calls C<croak()>.
 
 =head1 SEE ALSO
 
