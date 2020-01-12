@@ -1,2 +1,10 @@
+0.000_002	2020-01-12	T. R. Wyant
+    Remove -EE for $@ in require_module_ok(). Instead, $@ is always
+    appended to the diagnostics.
+
+    Add use_module_or_skip_all(). This is not a test; it has the same
+    signature as use_module_ok(), but if either load or import fail it
+    issues a skip_all().
+
 0.000_001	2020-01-11	T. R. Wyant
     Initial internal release
