@@ -10,7 +10,7 @@ use Exporter qw{ import };
 use Test2::API ();
 use Test2::Util ();
 
-our $VERSION = '0.000_002';
+our $VERSION = '0.000_003';
 
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{

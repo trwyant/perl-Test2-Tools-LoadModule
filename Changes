@@ -1,3 +1,14 @@
+0.000_003	2020-01-12	T. R. Wyant
+    Refactor module loading.
+
+    Correct t/use_or_skip_all.t. It should fail when a skip is generated
+    when it should not be.
+
+    In use_module_or_skip_all(), only get context if skipping, so that
+    we don't initialize the test system if the load succeeds. This
+    limits noisiness when loading modules that use other test
+    frameworks, e.g. Test::Perl::Critic.
+
 0.000_002	2020-01-12	T. R. Wyant
     Remove -EE for $@ in require_module_ok(). Instead, $@ is always
     appended to the diagnostics.
