@@ -14,6 +14,8 @@ our $VERSION = '0.000_003';
 
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{
+    load_module_ok
+    load_module_or_skip_all
     require_module_ok
     use_module_ok
     use_module_or_skip_all
@@ -102,7 +104,86 @@ sub use_module_or_skip_all ($;@) {	## no critic (ProhibitSubroutinePrototypes)
     return;
 }
 
+#### begin load_module_* ####
 
+use constant ARRAY_REF	=> ref [];
+
+sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
+    my ( $module, $version, $import, $name, $diag ) = _validate_args( @_ );
+
+    local $@ = undef;
+
+    my $eval = __build_load_eval( $module, $version, $import );
+
+    defined $name
+	or $name = $eval;
+
+    my $ctx = Test2::API::context();
+
+    _eval_in_pkg( $eval, $ctx->trace()->call() )
+	and return $ctx->pass_and_release( $name );
+
+    chomp $@;
+
+    return $ctx->fail_and_release( $name, @{ $diag }, $@ );
+}
+
+sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
+    my ( $module, $version, $import, $name ) = _validate_args( @_ );
+
+    local $@ = undef;
+
+    my $eval = __build_load_eval( $module, $version, $import );
+
+    defined $name
+	or $name = sprintf 'Unable to %s', $eval;
+
+    _eval_in_pkg( $eval, _get_call_info() )
+	and return;
+
+    my $ctx = Test2::API::context();
+    $ctx->plan( 0, SKIP => $name );
+    $ctx->release();
+    return;
+}
+
+sub __build_load_eval {
+    my ( $module, $version, $import ) = @_;
+    my @eval = "use $module";
+
+    if ( defined $version ) {
+	# TODO validate, maybe quote
+	push @eval, $version;
+    }
+
+    if ( defined $import ) {
+	push @eval, @{ $import } ? "qw{ @{ $import } }" : '()';
+    }
+
+    return "@eval";
+}
+
+sub _validate_args {
+    my ( $module, $version, $import, $name, $diag ) = @_;
+
+    defined $module
+	or croak MODNAME_UNDEF;
+
+    not defined $import
+	or ARRAY_REF eq ref $import
+	or croak 'Import list must be an array reference, or undef';
+
+    defined $diag
+	or $diag = [];
+    ARRAY_REF eq ref $diag
+	or croak 'Diagnostics must be an array reference, or undef';
+
+    return ( $module, $version, $import, $name, $diag );
+}
+
+#### end load_module_* ####
+
+# TODO delete this subroutine once the migration to load_*() is complete
 sub _build_use {
     my ( $module, @import ) = @_;
 
@@ -124,6 +205,13 @@ sub _build_use {
 sub _eval_in_pkg {
     my ( $eval, $pkg, $file, $line ) = @_;
 
+    my $e = <<"EOD";
+package $pkg;
+#line $line "$file"
+$eval;
+1;
+EOD
+
     # We need the stringy eval() so we can mess with Perl's concept of
     # what the current file and line number are for the purpose of
     # formatting the exception, AND as a convenience to get symbols
@@ -131,12 +219,9 @@ sub _eval_in_pkg {
     # IM(NS)HO the RequireCheckingReturnValueOfEval annotation
     # represents a bug in
     # Perl::Critic::Policy::ErrorHandling::RequireCheckingReturnValueOfEval
-    return eval <<"EOD"	## no critic (ProhibitStringyEval,RequireCheckingReturnValueOfEval)
-package $pkg;
-#line $line "$file"
-$eval;
-1;
-EOD
+    my $rslt = eval $e;	## no critic (ProhibitStringyEval)
+
+    return $rslt;
 }
 
 
@@ -202,6 +287,70 @@ L<Test::Perl::Critic|Test::Perl::Critic> to avoid warnings.
 =head1 SUBROUTINES
 
 The following subroutines are exported by default.
+
+=head2 load_module_ok
+
+ load_module_ok( $module, $ver, $import, $name, $diag );
+
+This subroutine tests whether the specified module (B<not> file) can be
+loaded. All arguments are optional but the first. The arguments are:
+
+=over
+
+=item $module - the module name
+
+=item $ver - the desired version number, or undef
+
+If defined, a version check is done.
+
+=item $import - the import list as an array ref, or undef
+
+The semantics are more or less the same as the C<use> built-in. That is,
+C<undef> specifies the default import list, an empty array specifies no
+import at all, and a non-empty array imports its contents.
+
+=item $name - the test name, or undef
+
+If C<undef>, the name defaults to the code used to load the module.
+B<Note> that this code, and therefore the default name, may change
+without notice.
+
+=item $diag - the desired diagnostics as an array ref, or undef
+
+If C<undef>, an empty array is used. Diagnostics are only issued on
+failure.
+
+=back
+
+The module is loaded using the C<require> built-in, and version checks
+and imports are done if specified. The test passes if all these
+succeeds, and fail otherwise. In the event of failure, C<$@> is appended
+to the diagnostics.
+
+B<Note> that any imports take place when this subroutine is called,
+which is normally at run time. Imported subroutines will be callable,
+provided you do not make use of prototypes or attributes.
+
+If you want anything imported from the loaded module to be available for
+subsequent compilation (e.g. variables, subroutine prototypes) you will
+need to put the call to this subroutine in a C<BEGIN { }> block:
+
+ BEGIN { load_module_ok( 'My::Module' ) }
+
+=head2 load_module_or_skip_all
+
+ load_module_or_skip_all( $module, $ver, $import, $name );
+
+The arguments are the same as L<load_module_ok()|/load_module_ok>,
+except for the fact that diagnostics are not specified. The module is
+loaded in the same way, but no tests are performed. Instead, if the load
+fails for any reason, all tests are skipped. The C<$name> argument gives
+the reason to skip, and defaults to C<"Unable to ..."> where the
+ellipsis is the code used to load the module.
+
+This subroutine can be called either at the top level or in a subtest,
+but either way it B<must> be called before any actual tests in the file
+or subtest.
 
 =head2 require_module_ok
 

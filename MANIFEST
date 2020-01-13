@@ -14,8 +14,11 @@ META.json
 META.yml
 README
 t/basic.t
+t/build.t
 t/lib/BogusVersion.pm
 t/lib/Present.pm
+t/load.t
+t/load_or_skip_all.t
 t/require.t
 t/use.t
 t/use_or_skip_all.t

@@ -14,39 +14,43 @@ BEGIN {
 use lib qw{ inc };
 use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
+
 {
     my $name = "use $CLASS (already loaded)";
     my $ran;
     subtest $name => sub {
-	use_module_or_skip_all $CLASS;
+	load_module_or_skip_all $CLASS;
 	pass $name;
 	$ran = 1;
     };
     ok $ran, "$name did not skip";
 }
+
 
 {
     my $module = 'Present';
     my $name	= "use $module (not previously loaded)";
     my $ran;
     subtest $name => sub {
-	use_module_or_skip_all $module;
+	load_module_or_skip_all $module;
 	pass $name;
 	$ran = 1;
     };
     ok $ran, "$name did not skip";
 }
 
+
 {
     my $module	= 'Bogus0';
     my $name	= "use $module (not loadable)";
     my $ran;
     subtest $name => sub {
-	use_module_or_skip_all $module;
+	load_module_or_skip_all $module;
 	fail $name;
     };
     ok !$ran, "$name skipped";
 }
+
 
 {
     my $module = 'BogusVersion';
@@ -54,12 +58,27 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
     my $name = "use $module $version (version error)";
     my $ran;
     subtest $name => sub {
-	use_module_or_skip_all $module, $version;
+	load_module_or_skip_all $module, $version;
 	fail $name;
 	$ran = 1;
     };
     ok !$ran, "$name skipped";
 }
+
+
+{
+    my $module = 'BogusVersion';
+    my @import = qw{ no_such_export };
+    my $name = "use $module qw{ @import } (import error)";
+    my $ran;
+    subtest $name => sub {
+	load_module_or_skip_all $module, undef, \@import;
+	fail $name;
+	$ran = 1;
+    };
+    ok !$ran, "$name skipped";
+}
+
 
 done_testing;
 

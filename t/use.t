@@ -17,8 +17,6 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
 use constant USE_MODULE_OK	=> "${CLASS}::use_module_ok";
 
-my $file = __FILE__;	# So we can interpolate it.
-
 {
     my $line;
     like
