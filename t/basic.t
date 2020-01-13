@@ -20,9 +20,6 @@ use Test2::Plugin::BailOnFail;
 imported_ok qw{
     load_module_ok
     load_module_or_skip_all
-    require_module_ok
-    use_module_ok
-    use_module_or_skip_all
 };
 
 done_testing;
