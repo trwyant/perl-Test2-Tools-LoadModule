@@ -8,7 +8,7 @@ use warnings;
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
 BEGIN {
     # The above loaded our module but did not import
-    CLASS->import();
+    CLASS->import( qw{ :all __build_load_eval } );
 }
 
 use lib qw{ inc };
@@ -22,12 +22,12 @@ my $line;
 {
     like
 	intercept {
-	    load_module_ok( $CLASS ); $line = __LINE__;
+	    load_module_ok( CLASS ); $line = __LINE__;
 	},
 	array {
 
 	    event Pass => sub {
-		call name	=> "use $CLASS";
+		call name	=> __build_load_eval( CLASS );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -37,19 +37,19 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS";
+	"Load previously-loaded module $CLASS, no import";
 }
 
 
 {
     like
 	intercept {
-	    load_module_ok( $CLASS, 0 ); $line = __LINE__;
+	    load_module_ok( CLASS, 0 ); $line = __LINE__;
 	},
 	array {
 
 	    event Pass => sub {
-		call name	=> "use $CLASS 0";
+		call name	=> __build_load_eval( CLASS, 0 );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -59,19 +59,19 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS, version 0";
+	"Load previously-loaded module $CLASS, version 0, no import";
 }
 
 
 {
     like
 	intercept {
-	    load_module_ok( $CLASS, undef, [] ); $line = __LINE__;
+	    load_module_ok( CLASS, undef, [] ); $line = __LINE__;
 	},
 	array {
 
 	    event Pass => sub {
-		call name	=> "use $CLASS ()";
+		call name	=> __build_load_eval( CLASS, undef, [] );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -81,7 +81,7 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS, with import";
+	"Load previously-loaded module $CLASS, default import";
 }
 
 
@@ -89,7 +89,7 @@ my $line;
     my $module = 'Present';
     like
 	intercept {
-	    load_module_ok( $module, undef, undef, "Load $module" ); $line = __LINE__;
+	    load_module_ok( $module, undef, [], "Load $module" ); $line = __LINE__;
 	},
 	array {
 
@@ -112,14 +112,15 @@ my $line;
 
 {
     my $module = 'Present';
+    my @import = qw{ under_the_tree };
     like
 	intercept {
-	    load_module_ok( $module, undef, [ 'under_the_tree' ] ); $line = __LINE__;
+	    load_module_ok( $module, undef, \@import ); $line = __LINE__;
 	},
 	array {
 
 	    event Pass => sub {
-		call name	=> "use $module qw{ under_the_tree }";
+		call name	=> __build_load_eval( $module, undef, \@import );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -145,7 +146,7 @@ my $line;
 	array {
 
 	    event Fail => sub {
-		call name	=> "use $module";
+		call name	=> __build_load_eval( $module );
 		call info	=> array {
 		    item object {
 			call details	=> cant_locate( $module );
@@ -169,12 +170,12 @@ my $line;
 
     like
 	intercept {
-	    load_module_ok( $module, undef, undef, undef, [ 'Fubar' ] ); $line = __LINE__;
+	    load_module_ok( $module, undef, [], undef, [ 'Fubar' ] ); $line = __LINE__;
 	},
 	array {
 
 	    event Fail => sub {
-		call name	=> "use $module";
+		call name	=> __build_load_eval( $module, undef, [] );
 		call info	=> array {
 		    item object {
 			call details	=> 'Fubar';
@@ -207,7 +208,7 @@ my $line;
 	array {
 
 	    event Fail => sub {
-		call name	=> "use $module $version";
+		call name	=> __build_load_eval( $module, $version );
 		call info	=> array {
 		    item object {
 			call details	=>
@@ -238,7 +239,8 @@ my $line;
 	array {
 
 	    event Fail => sub {
-		call name	=> "use $module qw{ @import }";
+		call name	=> __build_load_eval(
+		    $module, undef, \@import );
 		call info	=> array {
 		    item object {
 			call details	=>

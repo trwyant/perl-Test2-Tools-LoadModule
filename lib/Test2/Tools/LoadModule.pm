@@ -18,10 +18,10 @@ qw{
     load_module_or_skip_all
 };
 
-our @EXPORT_OK = @EXPORT;
+our @EXPORT_OK = ( @EXPORT, qw{ __build_load_eval } );
 
 our %EXPORT_TAGS = (
-    all	=> \@EXPORT_OK,
+    all	=> \@EXPORT,
 );
 
 use constant ARRAY_REF		=> ref [];
@@ -78,7 +78,10 @@ sub __build_load_eval {
     }
 
     if ( defined $import ) {
-	push @eval, @{ $import } ? "qw{ @{ $import } }" : '()';
+	@{ $import }
+	    and push @eval, "qw{ @{ $import } }";
+    } else {
+	push @eval, '()';
     }
 
     return "@eval";
@@ -209,9 +212,17 @@ If defined, a version check is done.
 
 =item $import - the import list as an array ref, or undef
 
-The semantics are more or less the same as the C<use> built-in. That is,
-C<undef> specifies the default import list, an empty array specifies no
-import at all, and a non-empty array imports its contents.
+B<Note> that the semantics are different than the C<use> built-in:
+
+=over
+
+=item C<undef> specifies no import at all;
+
+=item C<[]> specifies the default import;
+
+=item otherwise the specified import is done.
+
+=back
 
 =item $name - the test name, or undef
 
