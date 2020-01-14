@@ -5,22 +5,15 @@ use 5.006;
 use strict;
 use warnings;
 
-use Test::More 0.88;	# Because of done_testing();
+use Test2::V0;
+use Test2::Tools::LoadModule '-perl-import-semantics';
 
-eval {
-    require ExtUtils::Manifest;
-    1;
-} or plan skip_all => 'Unable to load ExtUtils::Manifest';
+load_module_or_skip_all 'ExtUtils::Manifest', undef, [
+    qw{ maniread } ];
 
-eval {
-    require Perl::MinimumVersion;
-    1;
-} or plan skip_all => 'Unable to load Perl::MinimumVersion';
+load_module_or_skip_all 'Perl::MinimumVersion';
 
-eval {
-    require version;
-    1;
-} or plan skip_all => 'Unable to load version';
+load_module_or_skip_all 'version';
 
 use lib qw{ inc };
 use My::Module::Meta;
@@ -28,7 +21,7 @@ use My::Module::Meta;
 my $min_perl = My::Module::Meta->requires_perl();
 my $min_perl_vers = version->parse( $min_perl );
 
-my $manifest = ExtUtils::Manifest::maniread();
+my $manifest = maniread();
 
 foreach my $fn ( sort keys %{ $manifest } ) {
     $fn =~ m{ \A xt/ }smx
