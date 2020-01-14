@@ -40,7 +40,7 @@ sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
 
     local $@ = undef;
 
-    my $eval = __build_load_eval( $module, $version, $import );
+    my $eval = _build_load_eval( $module, $version, $import );
 
     defined $name
 	or $name = $eval;
@@ -61,7 +61,7 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
 
     local $@ = undef;
 
-    my $eval = __build_load_eval( $module, $version, $import );
+    my $eval = _build_load_eval( $module, $version, $import );
 
     defined $name
 	or $name = sprintf 'Unable to %s', $eval;
@@ -116,7 +116,9 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
     }
 }
 
-sub __build_load_eval {
+# Note single leading underscore in name. This is the one to use
+# internally.
+sub _build_load_eval {
     my ( $module, $version, $import ) = @_;
     my @eval = "use $module";
 
@@ -125,12 +127,24 @@ sub __build_load_eval {
 
     if ( $import && @{ $import } ) {
 	push @eval, "qw{ @{ $import } }";
-    } elsif ( __perl_import_semantics( 1 ) xor defined $import ) {
+    } elsif ( __perl_import_semantics( 2 ) xor defined $import ) {
+	# __perl_import_semantics() gets the argument 2 because we want
+	# to know the setting in our caller's caller.
     } else {
 	push @eval, '()';
     }
 
     return "@eval";
+}
+
+# We need this for testing purposes because _build_load_eval expects
+# that if it looks two levels up the stack it gets the right hints. But
+# if we call it directly that is one level too far, so we insert an
+# extra level of scope to make things right.
+sub __build_load_eval {
+    __PACKAGE__ eq caller
+	and confess 'Testing interface not to be used internally';
+    return _build_load_eval( @_ );
 }
 
 
@@ -356,6 +370,11 @@ As a sample use of this,
  # back to the old, non-Perl import semantics.
  
  load_module 'My::Module';  # import() not even called.
+
+Note that the C<BEGIN { }> block is unnecessary if you do not need the
+compiler to see what is imported. In general this means that subroutine
+calls with parentheses are OK, but for anything else (prototypes,
+attributes, variables) you will need the C<BEGIN>.
 
 Yes, the idea of just having L<load_module_ok()|/load_module_ok> and
 L<load_module_or_skip_all()|/load_module_or_skip_all> have different

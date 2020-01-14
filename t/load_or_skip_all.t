@@ -28,6 +28,7 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
 
 {
+    use Test2::Tools::LoadModule '-perl-import-semantics';
     my $module = 'Present';
     my $name	= "use $module (not previously loaded)";
     my $ran;
@@ -37,6 +38,7 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 	$ran = 1;
     };
     ok $ran, "$name did not skip";
+    imported_ok 'and_accounted_for';
 }
 
 
