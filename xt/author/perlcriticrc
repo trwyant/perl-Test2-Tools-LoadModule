@@ -65,3 +65,7 @@ severity	= harsh
 add_themes	= core
 allow_unused_subroutine_arguments	= 0
 severity	= stern
+
+[Perl::Critic::Policy::Variables::RequireLocalizedPunctuationVars]
+
+allow		= %^H

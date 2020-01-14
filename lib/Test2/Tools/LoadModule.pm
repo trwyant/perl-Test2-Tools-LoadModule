@@ -6,7 +6,8 @@ use strict;
 use warnings;
 
 use Carp;
-use Exporter qw{ import };
+use Exporter ();
+use Getopt::Long 2.34;	# Comes with Perl 5.8.1.
 use Test2::API ();
 use Test2::Util ();
 
@@ -20,10 +21,14 @@ qw{
     load_module_or_skip_all
 };
 
-our @EXPORT_OK = ( @EXPORT, qw{ __build_load_eval } );
+our @EXPORT_OK = ( @EXPORT, qw{
+    __build_load_eval
+    __perl_import_semantics
+} );
 
 our %EXPORT_TAGS = (
-    all	=> \@EXPORT,
+    all		=> \@EXPORT,
+    private	=> [ grep { m/ \A _ /smx } @EXPORT_OK ],
 );
 
 use constant ARRAY_REF		=> ref [];
@@ -70,6 +75,47 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
     return;
 }
 
+{
+    my $key = sprintf '%s/use_perl_import_semantics', __PACKAGE__;
+
+    my $psr;
+    # Because we want to work with Perl 5.8.1 we are limited to
+    # Getopt::Long 2.34, and therefore getoptions(). So we expect the
+    # arguments to be in a suitably-localized @ARGV, and we will just
+    # return the options hash, so we expect no arguments.
+    sub _parse_import_opts {
+	my %opt;
+	$psr ||= Getopt::Long::Parser->new();
+	$psr->getoptions( \%opt, qw{
+	    perl_import_semantics|perl-import-semantics! } )
+	    or croak "Invalid import option";
+	return \%opt;
+    }
+
+    sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
+	local @ARGV = @_;	# See _parse_import_opts
+	my $opt = _parse_import_opts();
+        defined $opt->{perl_import_semantics}
+	    and $^H{$key} = $opt->{perl_import_semantics};
+	@_ = @ARGV;
+	goto &Exporter::import;
+    }
+
+    sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
+	local @ARGV = @_;	# See _parse_import_opts
+	my $opt = _parse_import_opts();
+        defined $opt->{perl_import_semantics}
+	    and $^H{$key} = ( ! $opt->{perl_import_semantics} );
+        return;	# There is no Exporter::unimport
+    }
+
+    sub __perl_import_semantics {
+	my ( $level ) = @_;
+	my $hint_hash = ( caller( $level || 0 ) )[ 10 ];
+	return $hint_hash->{$key} || 0;
+    }
+}
+
 sub __build_load_eval {
     my ( $module, $version, $import ) = @_;
     my @eval = "use $module";
@@ -77,9 +123,9 @@ sub __build_load_eval {
     defined $version
 	and push @eval, $version;
 
-    if ( defined $import ) {
-	@{ $import }
-	    and push @eval, "qw{ @{ $import } }";
+    if ( $import && @{ $import } ) {
+	push @eval, "qw{ @{ $import } }";
+    } elsif ( __perl_import_semantics( 1 ) xor defined $import ) {
     } else {
 	push @eval, '()';
     }
@@ -189,10 +235,10 @@ This module restores that functionality.
 
 B<Note> that if you are using this module with testing tools that are
 not based on L<Test2::V0|Test2::V0> you may have to tweak the load order
-of modules. For example, I have found it necessary to load
-L<Test::Builder|Test::Builder> before L<Test2::V0|Test2::V0> if I am
-using C<use_module_or_skip_all()> to load
-L<Test::Perl::Critic|Test::Perl::Critic> to avoid warnings.
+of modules. I ran into this in the early phases of implementation, and
+fixed it for my own use by initializing the testing system as late as
+possible, but I can not promise that all such problems have been
+eliminated.
 
 =head1 SUBROUTINES
 
@@ -219,17 +265,9 @@ If C<undef>, no version check is done.
 
 =item $import - the import list as an array ref, or undef
 
-B<Note> that the semantics are different than the C<use> built-in:
-
-=over
-
-=item C<undef> specifies no import at all;
-
-=item C<[]> specifies the default import;
-
-=item otherwise the specified import is done.
-
-=back
+By default, C<undef> means do not import, an empty array means do the
+default import. See L<IMPORT SEMANTICS|/IMPORT SEMANTICS>, below, for
+details.
 
 =item $name - the test name, or undef
 
@@ -275,6 +313,55 @@ ellipsis is the code used to load the module.
 This subroutine can be called either at the top level or in a subtest,
 but either way it B<must> be called before any actual tests in the file
 or subtest.
+
+=head1 IMPORT SEMANTICS
+
+By default, the semantics of this module's C<$import> argument are not
+those of the Perl C<use()> built-in. Specifically, C<undef> or missing
+cause the module's C<import()> not to be called at all, whereas an array
+reference causes C<import()> to be called and passed the contents of the
+array, if any.
+
+These semantics seemed to the author more natural when testing -- that
+is, when calling L<load_module_ok()|/load_module_ok>, But when calling
+L<load_module_or_skip_all()|/load_module_or_skip_all>, the Perl C<use()>
+semantics seemed more natural. That is, an unspecified or C<undef>
+C<$import> causes the default import, but C<[]> causes C<import()> not
+to be called at all.
+
+In an effort to have it both ways, this module allows you to specify
+
+ use Test2::Tools::LoadModule '-perl-import-semantics';
+
+to get the Perl C<use()> semantics. These take effect within the lexical
+scope of the statement, so that, for example, you could issue the C<use>
+at the top of a block, and drop back to the old semantics after the end
+of the block. You can also go back to non-Perl semantics with an
+explicit
+
+ no Test2::Tools::LoadModule '-perl-import-semantics';
+
+As a sample use of this,
+
+ BEGIN {
+ 
+     use Test2::Tools::LoadModule '-perl-import-semantics';
+ 
+     load_module_or_skip_all 'Optional::Module';
+ 
+     # If we don't skip all, the default import for Optional::Module
+     # has been done.
+ }
+ # Anything exported by Optional::Module is available here, but we're
+ # back to the old, non-Perl import semantics.
+ 
+ load_module 'My::Module';  # import() not even called.
+
+Yes, the idea of just having L<load_module_ok()|/load_module_ok> and
+L<load_module_or_skip_all()|/load_module_or_skip_all> have different
+import semantics was considered. It was rejected because the
+inconsistency seemed like a trap for the unwary, and because it did not
+provide the flexibility that the current implementation does.
 
 =head1 SEE ALSO
 

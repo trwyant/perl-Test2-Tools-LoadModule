@@ -12,7 +12,7 @@ use Test2::Plugin::BailOnFail;
     ok eval {
 	require Test2::Tools::LoadModule;
 	1;
-    }, 'Can load Test2::Tools::LoadModule';
+    }, 'Can load Test2::Tools::LoadModule', $@;
 
     Test2::Tools::LoadModule->import();
 }
