@@ -73,6 +73,7 @@ sub requires {
 	'Test2::API'	=> 0,
 	'Test2::Util'	=> 0,
 	strict		=> 0,
+	version		=> 0.86,	# for is_lax()
 	warnings	=> 0,
 	@extra,
     };

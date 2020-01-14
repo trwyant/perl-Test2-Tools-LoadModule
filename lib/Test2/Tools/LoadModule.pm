@@ -10,6 +10,8 @@ use Exporter qw{ import };
 use Test2::API ();
 use Test2::Util ();
 
+use version 0.86 qw{ is_lax };	# for is_lax()
+
 our $VERSION = '0.000_005';
 
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
@@ -72,10 +74,8 @@ sub __build_load_eval {
     my ( $module, $version, $import ) = @_;
     my @eval = "use $module";
 
-    if ( defined $version ) {
-	# TODO validate, maybe quote
-	push @eval, $version;
-    }
+    defined $version
+	and push @eval, $version;
 
     if ( defined $import ) {
 	@{ $import }
@@ -93,6 +93,11 @@ sub _validate_args {
 
     defined $module
 	or croak MODNAME_UNDEF;
+
+    if ( defined $version ) {
+	is_lax( $version )
+	    or croak "Version '$version' is invalid";
+    }
 
     not defined $import
 	or ARRAY_REF eq ref $import
@@ -208,7 +213,9 @@ This is required, and must not be C<undef>.
 
 =item $ver - the desired version number, or undef
 
-If defined, a version check is done.
+If defined, it must be a valid version, and a version check is done.
+
+If C<undef>, no version check is done.
 
 =item $import - the import list as an array ref, or undef
 
@@ -237,7 +244,7 @@ failure.
 
 =back
 
-Argument validation failures are dealt with by C<croak()>.
+Argument validation failures are signalled by C<croak()>.
 
 The module is loaded using the C<require> built-in, and version checks
 and imports are done if specified. The test passes if all these
