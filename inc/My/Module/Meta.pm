@@ -70,6 +70,7 @@ sub requires {
 ##  }
     return +{
 	Exporter	=> 0,
+	'Getopt::Long'	=> 2.34,
 	'Test2::API'	=> 0,
 	'Test2::Util'	=> 0,
 	strict		=> 0,
