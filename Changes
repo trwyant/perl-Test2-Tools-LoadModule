@@ -1,3 +1,11 @@
+0.000_006	2020-01-14	T. R. Wyant
+    Add -perl-import-semantics export/pragma.
+    This makes the $import argument behave like the import list of the use()
+    built-in. It behaves like a pragma in that it is invoked by the use()
+    and no() built-ins, and that it has lexical scope.
+
+    Validate version numbers.
+
 0.000_005	2020-01-13	T. R. Wyant
     Change semantics of import list. I decided that the module would be
     easier to use if I broke with the semantics of use(). Instead, undef
