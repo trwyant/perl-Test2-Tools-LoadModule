@@ -1,3 +1,13 @@
+0.000_007	2020-01-14	T. R. Wyant
+    Convert xt/ tests to use Test2::Tools::LoadModule so that I can use
+    load_module_or_skip_all(). Those that needed access to a test
+    framework got Test2::V0 in place of Test::More.
+
+    Fix bug in -perl-import-semantics.  I was looking the wrong place on
+    the scope stack.
+
+    Add Getopt::Long as dependency (ooops!)
+
 0.000_006	2020-01-14	T. R. Wyant
     Add -perl-import-semantics export/pragma.
     This makes the $import argument behave like the import list of the use()
