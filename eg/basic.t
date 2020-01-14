@@ -8,7 +8,7 @@ use Test2::Plugin::BailOnFail;	# Abort entire test run on first failure
 use Test2::Tools::LoadModule;
 
 # TODO modify or remove import list as appropriate.
-use_module_ok CLASS, qw{ wrap fill $columns $huge };
+load_module_ok CLASS, undef, [ qw{ wrap fill $columns $huge } ];
 
 # TODO modify to suit, or remove if nothing exported.
 imported_ok qw{ wrap fill $columns $huge };
