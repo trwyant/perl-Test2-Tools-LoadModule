@@ -8,7 +8,7 @@ use warnings;
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
 BEGIN {
     # The above loaded our module but did not import
-    CLASS->import( qw{ :all __build_load_eval } );
+    CLASS->import( qw{ :all :private } );
 }
 
 use lib qw{ inc };
@@ -161,7 +161,33 @@ my $line;
 
 	    end;
 	},
-	"Load unloadable module $module, with eval error";
+	"Load unloadable module $module, with load error diagnostic";
+}
+
+
+{
+    my $module = 'Bogus0';
+
+    no Test2::Tools::LoadModule '-load-errors';
+
+    like
+	intercept {
+	    load_module_ok( $module ); $line = __LINE__;
+	},
+	array {
+
+	    event Fail => sub {
+		call name	=> __build_load_eval( $module );
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"Load unloadable module $module, with no load error diagnostic";
 }
 
 

@@ -15,16 +15,19 @@ BEGIN {
 BEGIN {
     note 'Make sure this works in a BEGIN block';
 
-    ok ! __perl_import_semantics(), 'Perl import semantics are off';
+    ok ! __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are off';
 
     use Test2::Tools::LoadModule '-perl-import-semantics';
 
-    ok __perl_import_semantics(), 'Perl import semantics are now on';
+    ok __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are now on';
 
     note 'End of BEGIN block';
 }
 
-ok ! __perl_import_semantics(), 'Perl import semantics are now off';
+ok ! __get_hint( 'perl_import_semantics' ),
+    'Perl import semantics are now off';
 
 is __build_load_eval( 'Fubar' ),
     'use Fubar ()',
@@ -49,7 +52,8 @@ is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
 {
     note 'Beginning of block';
 
-    ok ! __perl_import_semantics(), 'Perl import semantics are still off';
+    ok ! __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are still off';
 
     is __build_load_eval( 'Fubar' ),
 	'use Fubar ()',
@@ -57,7 +61,8 @@ is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
 
     use Test2::Tools::LoadModule '-perl-import-semantics';
 
-    ok __perl_import_semantics(), 'Perl import semantics are now on';
+    ok __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are now on';
 
     is __build_load_eval( 'Fubar' ),
 	'use Fubar',
@@ -81,7 +86,8 @@ is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
 
     no Test2::Tools::LoadModule '-perl-import-semantics';
 
-    ok ! __perl_import_semantics(), 'Perl import semantics are now off';
+    ok ! __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are now off';
 
     is __build_load_eval( 'Fubar' ),
 	'use Fubar ()',
@@ -89,7 +95,8 @@ is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
 
     use Test2::Tools::LoadModule '-perl-import-semantics';
 
-    ok __perl_import_semantics(), 'Perl import semantics are now on';
+    ok __get_hint( 'perl_import_semantics' ),
+	'Perl import semantics are now on';
 
     is __build_load_eval( 'Fubar' ),
 	'use Fubar',
@@ -98,7 +105,7 @@ is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
     note 'End of block';
 }
 
-ok ! __perl_import_semantics(),
+ok ! __get_hint( 'perl_import_semantics' ),
     'Perl import semantics are now off after block';
 
 is __build_load_eval( 'Fubar' ),

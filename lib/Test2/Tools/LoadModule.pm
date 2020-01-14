@@ -23,7 +23,7 @@ qw{
 
 our @EXPORT_OK = ( @EXPORT, qw{
     __build_load_eval
-    __perl_import_semantics
+    __get_hint
 } );
 
 our %EXPORT_TAGS = (
@@ -52,7 +52,8 @@ sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
 
     chomp $@;
 
-    return $ctx->fail_and_release( $name, @{ $diag }, $@ );
+    return $ctx->fail_and_release( $name, @{ $diag },
+	__get_hint( load_errors => 1 ) ? ( $@ ) : () );
 }
 
 
@@ -76,9 +77,8 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
 }
 
 {
-    my $key = sprintf '%s/use_perl_import_semantics', __PACKAGE__;
-
     my $psr;
+
     # Because we want to work with Perl 5.8.1 we are limited to
     # Getopt::Long 2.34, and therefore getoptions(). So we expect the
     # arguments to be in a suitably-localized @ARGV, and we will just
@@ -87,7 +87,10 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
 	my %opt;
 	$psr ||= Getopt::Long::Parser->new();
 	$psr->getoptions( \%opt, qw{
-	    perl_import_semantics|perl-import-semantics! } )
+		load_errors|load-errors!
+		perl_import_semantics|perl-import-semantics!
+	    },
+	)
 	    or croak "Invalid import option";
 	return \%opt;
     }
@@ -95,8 +98,7 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
     sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
 	local @ARGV = @_;	# See _parse_import_opts
 	my $opt = _parse_import_opts();
-        defined $opt->{perl_import_semantics}
-	    and $^H{$key} = $opt->{perl_import_semantics};
+	$^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
 	@_ = @ARGV;
 	goto &Exporter::import;
     }
@@ -104,14 +106,25 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
     sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
 	local @ARGV = @_;	# See _parse_import_opts
 	my $opt = _parse_import_opts();
-        defined $opt->{perl_import_semantics}
-	    and $^H{$key} = ( ! $opt->{perl_import_semantics} );
+	$^H{ _make_pragma_key() } = ! $opt->{$_} for keys %{ $opt };
         return;	# There is no Exporter::unimport
     }
 
-    sub __perl_import_semantics {
-	my ( $level ) = @_;
+    sub _make_pragma_key {
+	return join '', __PACKAGE__, '/', $_;
+    }
+
+    my %default_hint = (
+	load_errors	=> 1,
+    );
+
+    sub __get_hint {
+	my ( $hint, $level ) = @_;
+	local $_ = $hint;
+	my $key = _make_pragma_key();
 	my $hint_hash = ( caller( $level || 0 ) )[ 10 ];
+	exists $hint_hash->{$key}
+	    or return( $default_hint{$hint} || 0 );
 	return $hint_hash->{$key} || 0;
     }
 }
@@ -127,8 +140,8 @@ sub _build_load_eval {
 
     if ( $import && @{ $import } ) {
 	push @eval, "qw{ @{ $import } }";
-    } elsif ( __perl_import_semantics( 2 ) xor defined $import ) {
-	# __perl_import_semantics() gets the argument 2 because we want
+    } elsif ( __get_hint( perl_import_semantics => 2 ) xor defined $import ) {
+	# __get_hint() gets the argument 2 because we want
 	# to know the setting in our caller's caller.
     } else {
 	push @eval, '()';
@@ -298,10 +311,23 @@ failure.
 
 Argument validation failures are signalled by C<croak()>.
 
-The module is loaded using the C<require> built-in, and version checks
-and imports are done if specified. The test passes if all these
-succeeds, and fail otherwise. In the event of failure, C<$@> is appended
-to the diagnostics.
+The module is loaded, and version checks and imports are done if
+specified. The test passes if all these succeed, and fails otherwise.
+
+By default, C<$@> is appended to the diagnostics issued in the event of
+failure. If you do not want this, you can specify C<'-no-load-errors'>
+when you import this module. This has lexical scope, and you can
+explicitly turn it on again using
+
+ use Test2::Tools::LoadModule '-load-errors';
+
+Actually, you can also turn off the appending of C<$@> to diagnostics
+with
+
+ no Test2::Tools::LoadModule '-load-errors';
+
+but you get no symbols imported this way, so do not do it unless you
+have already done a C<use>.
 
 B<Note> that any imports take place when this subroutine is called,
 which is normally at run time. Imported subroutines will be callable,
