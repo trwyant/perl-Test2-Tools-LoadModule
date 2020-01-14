@@ -11,8 +11,6 @@ load_module_or_skip_all 'ExtUtils::Manifest', undef, [ 'maniread' ];
 my $manifest = maniread();
 
 foreach ( sort keys %{ $manifest } ) {
-    m{ \A bin / }smx
-	and next;
     m{ \A eg / }smx
 	and next;
     m{ \A script / }smx
