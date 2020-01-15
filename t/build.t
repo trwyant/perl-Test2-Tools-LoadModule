@@ -12,105 +12,52 @@ BEGIN {
 }
 
 
-BEGIN {
-    note 'Make sure this works in a BEGIN block';
-
-    ok ! __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are off';
-
-    use Test2::Tools::LoadModule '-perl-import-semantics';
-
-    ok __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are now on';
-
-    note 'End of BEGIN block';
+sub perl_import_semantics {
+    return __get_hint_hash( 1 )->{perl_import_semantics} || 0;
 }
 
-ok ! __get_hint( 'perl_import_semantics' ),
-    'Perl import semantics are now off';
-
-is __build_load_eval( 'Fubar' ),
+is __build_load_eval( {}, 'Fubar' ),
     'use Fubar ()',
-    'Module name only';
+    'Module name only, load semantics';
 
-is __build_load_eval( Smart => 86 ),
+is __build_load_eval( {}, Smart => 86 ),
     'use Smart 86 ()',
-    'Module and version';
+    'Module and version, load semantics';
 
-is __build_load_eval( Nemo => undef, [] ),
+is __build_load_eval( {}, Nemo => undef, [] ),
     'use Nemo',
-    'Module and empty import list';
+    'Module and empty import list, load semantics';
 
-is __build_load_eval( Howard => undef, [ qw{ larry moe shemp } ] ),
+is __build_load_eval( {}, Howard => undef, [ qw{ larry moe shemp } ] ),
     'use Howard qw{ larry moe shemp }',
-    'Module and explicit import list';
+    'Module and explicit import list, load semantics';
 
-is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
+is __build_load_eval( {}, Dent => 42, [ qw{ Arthur } ] ),
     'use Dent 42 qw{ Arthur }',
-    'Module, version, and explicit export list';
+    'Module, version, and explicit export list, load semantics';
 
-{
-    note 'Beginning of block';
+is __build_load_eval( { perl_import_semantics => 1 }, 'Fubar' ),
+    'use Fubar',
+    'Module name only, Perl semantics';
 
-    ok ! __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are still off';
+is __build_load_eval( { perl_import_semantics => 1 }, Smart => 86 ),
+    'use Smart 86',
+    'Module and version, Perl semantics';
 
-    is __build_load_eval( 'Fubar' ),
-	'use Fubar ()',
-	'Module name only, still load semantics inside new block';
+is __build_load_eval( { perl_import_semantics => 1 },
+	Nemo => undef, [] ),
+    'use Nemo ()',
+    'Module and empty import list, Perl semantics';
 
-    use Test2::Tools::LoadModule '-perl-import-semantics';
+is __build_load_eval( { perl_import_semantics => 1 },
+	Howard => undef, [ qw{ larry moe shemp } ] ),
+    'use Howard qw{ larry moe shemp }',
+    'Module and explicit import list, Perl semantics';
 
-    ok __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are now on';
-
-    is __build_load_eval( 'Fubar' ),
-	'use Fubar',
-	'Module name only, Perl semantics';
-
-    is __build_load_eval( Smart => 86 ),
-	'use Smart 86',
-	'Module and version, Perl semantics';
-
-    is __build_load_eval( Nemo => undef, [] ),
-	'use Nemo ()',
-	'Module and empty import list, Perl semantics';
-
-    is __build_load_eval( Howard => undef, [ qw{ larry moe shemp } ] ),
-	'use Howard qw{ larry moe shemp }',
-	'Module and explicit import list, Perl semantics';
-
-    is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
-	'use Dent 42 qw{ Arthur }',
-	'Module, version, and explicit export list, Perl semantics';
-
-    no Test2::Tools::LoadModule '-perl-import-semantics';
-
-    ok ! __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are now off';
-
-    is __build_load_eval( 'Fubar' ),
-	'use Fubar ()',
-	'Module name only, back to load semantics';
-
-    use Test2::Tools::LoadModule '-perl-import-semantics';
-
-    ok __get_hint( 'perl_import_semantics' ),
-	'Perl import semantics are now on';
-
-    is __build_load_eval( 'Fubar' ),
-	'use Fubar',
-	'Module name only, back to Perl semantics';
-
-    note 'End of block';
-}
-
-ok ! __get_hint( 'perl_import_semantics' ),
-    'Perl import semantics are now off after block';
-
-is __build_load_eval( 'Fubar' ),
-    'use Fubar ()',
-    'Module name only, back to load semantics after block';
+is __build_load_eval( { perl_import_semantics => 1 },
+	Dent => 42, [ qw{ Arthur } ] ),
+    'use Dent 42 qw{ Arthur }',
+    'Module, version, and explicit export list, Perl semantics';
 
 done_testing;
 

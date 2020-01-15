@@ -28,12 +28,11 @@ use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
 
 {
-    use Test2::Tools::LoadModule '-perl-import-semantics';
     my $module = 'Present';
-    my $name	= "use $module (not previously loaded)";
+    my $name	= "use $module (not previously loaded, Perl semantics)";
     my $ran;
     subtest $name => sub {
-	load_module_or_skip_all $module;
+	load_module_p_or_skip_all $module;
 	pass $name;
 	$ran = 1;
     };

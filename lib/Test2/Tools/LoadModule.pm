@@ -19,11 +19,12 @@ our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{
     load_module_ok
     load_module_or_skip_all
+    load_module_p_or_skip_all
 };
 
 our @EXPORT_OK = ( @EXPORT, qw{
     __build_load_eval
-    __get_hint
+    __get_hint_hash
 } );
 
 our %EXPORT_TAGS = (
@@ -32,15 +33,33 @@ our %EXPORT_TAGS = (
 );
 
 use constant ARRAY_REF		=> ref [];
+use constant HASH_REF		=> ref {};
 use constant MODNAME_UNDEF	=> 'Module name must be defined';
 
 
 sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
-    my ( $module, $version, $import, $name, $diag ) = _validate_args( @_ );
+    my @args = _validate_args( @_ );
+    my $ctx = Test2::API::context();
+    my $rslt = _load_module_ok( @args );
+    $ctx->release();
+    return $rslt;
+}
+
+sub load_module_p_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
+    my @args = _validate_args( @_ );
+    $args[0]{perl_import_semantics} = 1;
+    my $ctx = Test2::API::context();
+    my $rslt = _load_module_ok( @args );
+    $ctx->release();
+    return $rslt;
+}
+
+sub _load_module_ok {
+    my ( $opt, $module, $version, $import, $name, $diag ) = @_;
 
     local $@ = undef;
 
-    my $eval = _build_load_eval( $module, $version, $import );
+    my $eval = _build_load_eval( $opt, $module, $version, $import );
 
     defined $name
 	or $name = $eval;
@@ -53,27 +72,45 @@ sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
     chomp $@;
 
     return $ctx->fail_and_release( $name, @{ $diag },
-	__get_hint( load_errors => 1 ) ? ( $@ ) : () );
+	$opt->{load_errors} ? ( $@ ) : () );
 }
 
 
 sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
-    my ( $module, $version, $import, $name ) = _validate_args( @_ );
-
-    local $@ = undef;
-
-    my $eval = _build_load_eval( $module, $version, $import );
-
-    defined $name
-	or $name = sprintf 'Unable to %s', $eval;
-
-    _eval_in_pkg( $eval, _get_call_info() )
+    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
+    _load_module_or_skip_all( $opt, $module, $version, $import, $name )
 	and return;
 
     my $ctx = Test2::API::context();
     $ctx->plan( 0, SKIP => $name );
     $ctx->release();
     return;
+}
+
+sub load_module_p_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
+    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
+    $opt->{perl_import_semantics} = 1;
+    _load_module_or_skip_all( $opt, $module, $version, $import, $name )
+	and return;
+
+    my $ctx = Test2::API::context();
+    $ctx->plan( 0, SKIP => $name );
+    $ctx->release();
+    return;
+}
+
+
+sub _load_module_or_skip_all {
+    my ( $opt, $module, $version, $import, $name ) = @_;
+
+    local $@ = undef;
+
+    my $eval = _build_load_eval( $opt, $module, $version, $import );
+
+    defined $name
+	or $name = sprintf 'Unable to %s', $eval;
+
+    return _eval_in_pkg( $eval, _get_call_info() )
 }
 
 {
@@ -84,55 +121,61 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
     # arguments to be in a suitably-localized @ARGV, and we will just
     # return the options hash, so we expect no arguments.
     sub _parse_import_opts {
-	my %opt;
+	my ( $opt ) = @_;
+	$opt ||= {};
 	$psr ||= Getopt::Long::Parser->new();
-	$psr->getoptions( \%opt, qw{
+	$psr->getoptions( $opt, qw{
 		load_errors|load-errors!
-		perl_import_semantics|perl-import-semantics!
 	    },
 	)
 	    or croak "Invalid import option";
-	return \%opt;
+	return $opt;
     }
 
-    sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
-	local @ARGV = @_;	# See _parse_import_opts
-	my $opt = _parse_import_opts();
-	$^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
-	@_ = @ARGV;
-	goto &Exporter::import;
-    }
+}
 
-    sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
-	local @ARGV = @_;	# See _parse_import_opts
-	my $opt = _parse_import_opts();
-	$^H{ _make_pragma_key() } = ! $opt->{$_} for keys %{ $opt };
-        return;	# There is no Exporter::unimport
-    }
+sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
+    local @ARGV = @_;	# See _parse_import_opts
+    my $opt = _parse_import_opts();
+    $^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
+    @_ = @ARGV;
+    goto &Exporter::import;
+}
 
-    sub _make_pragma_key {
-	return join '', __PACKAGE__, '/', $_;
-    }
+sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
+    local @ARGV = @_;	# See _parse_import_opts
+    my $opt = _parse_import_opts();
+    $^H{ _make_pragma_key() } = ! $opt->{$_} for keys %{ $opt };
+    return;	# There is no Exporter::unimport
+}
 
+sub _make_pragma_key {
+    return join '', __PACKAGE__, '/', $_;
+}
+
+{
     my %default_hint = (
 	load_errors	=> 1,
     );
 
-    sub __get_hint {
-	my ( $hint, $level ) = @_;
-	local $_ = $hint;
-	my $key = _make_pragma_key();
-	my $hint_hash = ( caller( $level || 0 ) )[ 10 ];
-	exists $hint_hash->{$key}
-	    or return( $default_hint{$hint} || 0 );
-	return $hint_hash->{$key} || 0;
+    sub __get_hint_hash {
+	my ( $level ) = @_;
+	$level ||= 0;
+	my $hint_hash = ( caller( $level ) )[ 10 ];
+	my %rslt = %default_hint;
+	foreach ( keys %{ $hint_hash } ) {
+	    my ( $hint_pkg, $hint_key ) = split qr< / >smx;
+	    __PACKAGE__ eq $hint_pkg
+		and $rslt{$hint_key} = $hint_hash->{$_};
+	}
+	return wantarray ? %rslt : \%rslt;
     }
 }
 
 # Note single leading underscore in name. This is the one to use
 # internally.
 sub _build_load_eval {
-    my ( $module, $version, $import ) = @_;
+    my ( $opt, $module, $version, $import ) = @_;
     my @eval = "use $module";
 
     defined $version
@@ -140,9 +183,8 @@ sub _build_load_eval {
 
     if ( $import && @{ $import } ) {
 	push @eval, "qw{ @{ $import } }";
-    } elsif ( __get_hint( perl_import_semantics => 2 ) xor defined $import ) {
-	# __get_hint() gets the argument 2 because we want
-	# to know the setting in our caller's caller.
+    } elsif ( $opt->{perl_import_semantics} xor defined $import ) {
+	# Do nothing.
     } else {
 	push @eval, '()';
     }
@@ -150,14 +192,12 @@ sub _build_load_eval {
     return "@eval";
 }
 
-# We need this for testing purposes because _build_load_eval expects
-# that if it looks two levels up the stack it gets the right hints. But
-# if we call it directly that is one level too far, so we insert an
-# extra level of scope to make things right.
 sub __build_load_eval {
     __PACKAGE__ eq caller
 	and confess 'Testing interface not to be used internally';
-    return _build_load_eval( @_ );
+    HASH_REF eq ref $_[0]
+	or unshift @_, scalar __get_hint_hash( 1 );
+    goto &_build_load_eval;
 }
 
 
@@ -178,10 +218,14 @@ sub _validate_args {
 
     defined $diag
 	or $diag = [];
+    ref $diag
+	or $diag = [ $diag ];
     ARRAY_REF eq ref $diag
-	or croak 'Diagnostics must be an array reference, or undef';
+	or croak 'Diagnostics must be a scalar, an array reference, or undef';
 
-    return ( $module, $version, $import, $name, $diag );
+    my $opt = __get_hint_hash( 2 );
+
+    return ( $opt, $module, $version, $import, $name, $diag );
 }
 
 
@@ -199,9 +243,6 @@ EOD
     # what the current file and line number are for the purpose of
     # formatting the exception, AND as a convenience to get symbols
     # imported.
-    # IM(NS)HO the RequireCheckingReturnValueOfEval annotation
-    # represents a bug in
-    # Perl::Critic::Policy::ErrorHandling::RequireCheckingReturnValueOfEval
     my $rslt = eval $e;	## no critic (ProhibitStringyEval)
 
     return $rslt;
@@ -231,10 +272,9 @@ Test2::Tools::LoadModule - Test whether a module can be successfully loaded.
 =head1 SYNOPSIS
 
  use Test2::V0;
- use Test2::Plugin::BaleOnFail;
  use Test2::Tools::LoadModule;
  
- load_module_ok( 'My::Module' );
+ load_module_ok 'My::Module';
  
  done_testing();
 
@@ -286,15 +326,16 @@ This is required, and must not be C<undef>.
 
 =item $ver - the desired version number, or undef
 
-If defined, it must be a valid version, and a version check is done.
+If defined, a version check is done. An exception is thrown if
+L<version|version> thinks the version number is invalid.
 
 If C<undef>, no version check is done.
 
 =item $import - the import list as an array ref, or undef
 
-By default, C<undef> means do not import, an empty array means do the
-default import. See L<IMPORT SEMANTICS|/IMPORT SEMANTICS>, below, for
-details.
+This argument specifies the import list. C<undef> means not to import at
+all, C<[]> means to import the default symbols, and a scalar or a
+non-empty array reference mean to import the specified symbols.
 
 =item $name - the test name, or undef
 
@@ -339,74 +380,43 @@ need to put the call to this subroutine in a C<BEGIN { }> block:
 
  BEGIN { load_module_ok( 'My::Module' ) }
 
+=head2 load_module_p_ok
+
+ load_module_p_ok( $module, $ver, $import, $name, $diag );
+
+This subroutine is the same as L<load_module_ok()|/load_module_ok>, but
+Perl semantics are applied to the import list. That is, the value
+C<undef> means to import the default symbols, and C<[]> means not to
+call C<import()> at all.
+
 =head2 load_module_or_skip_all
 
  load_module_or_skip_all( $module, $ver, $import, $name );
 
+This subroutine performs the same loading actions as
+L<load_module_ok()|/load_module_ok>, but no tests are performed.
+Instead, all tests are skipped if any part of the load fails.
+
 The arguments are the same as L<load_module_ok()|/load_module_ok>,
-except for the fact that diagnostics are not specified. The module is
-loaded in the same way, but no tests are performed. Instead, if the load
-fails for any reason, all tests are skipped. The C<$name> argument gives
-the reason to skip, and defaults to C<"Unable to ..."> where the
-ellipsis is the code used to load the module.
+except for the fact that diagnostics are not specified.
+
+The C<$name> argument gives the skip message, and defaults to
+C<"Unable to ..."> where the ellipsis is the code used to load the
+module.
 
 This subroutine can be called either at the top level or in a subtest,
 but either way it B<must> be called before any actual tests in the file
 or subtest.
 
-=head1 IMPORT SEMANTICS
+=head2 load_module_p_or_skip_all
 
-By default, the semantics of this module's C<$import> argument are not
-those of the Perl C<use()> built-in. Specifically, C<undef> or missing
-cause the module's C<import()> not to be called at all, whereas an array
-reference causes C<import()> to be called and passed the contents of the
-array, if any.
+ load_module_p_or_skip_all( $module, $ver, $import, $name );
 
-These semantics seemed to the author more natural when testing -- that
-is, when calling L<load_module_ok()|/load_module_ok>, But when calling
-L<load_module_or_skip_all()|/load_module_or_skip_all>, the Perl C<use()>
-semantics seemed more natural. That is, an unspecified or C<undef>
-C<$import> causes the default import, but C<[]> causes C<import()> not
-to be called at all.
-
-In an effort to have it both ways, this module allows you to specify
-
- use Test2::Tools::LoadModule '-perl-import-semantics';
-
-to get the Perl C<use()> semantics. These take effect within the lexical
-scope of the statement, so that, for example, you could issue the C<use>
-at the top of a block, and drop back to the old semantics after the end
-of the block. You can also go back to non-Perl semantics with an
-explicit
-
- no Test2::Tools::LoadModule '-perl-import-semantics';
-
-As a sample use of this,
-
- BEGIN {
- 
-     use Test2::Tools::LoadModule '-perl-import-semantics';
- 
-     load_module_or_skip_all 'Optional::Module';
- 
-     # If we don't skip all, the default import for Optional::Module
-     # has been done.
- }
- # Anything exported by Optional::Module is available here, but we're
- # back to the old, non-Perl import semantics.
- 
- load_module 'My::Module';  # import() not even called.
-
-Note that the C<BEGIN { }> block is unnecessary if you do not need the
-compiler to see what is imported. In general this means that subroutine
-calls with parentheses are OK, but for anything else (prototypes,
-attributes, variables) you will need the C<BEGIN>.
-
-Yes, the idea of just having L<load_module_ok()|/load_module_ok> and
-L<load_module_or_skip_all()|/load_module_or_skip_all> have different
-import semantics was considered. It was rejected because the
-inconsistency seemed like a trap for the unwary, and because it did not
-provide the flexibility that the current implementation does.
+This subroutine is the same as
+L<load_module_or_skip_all()|/load_module_or_skip_all>, but Perl
+semantics are applied to the import list. That is, the value C<undef>
+means to import the default symbols, and C<[]> means not to call
+C<import()> at all.
 
 =head1 SEE ALSO
 
