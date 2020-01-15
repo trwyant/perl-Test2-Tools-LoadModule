@@ -1,3 +1,6 @@
+0.000_009	2020-01-15	T. R. Wyant
+    Add load_module_or_skip(), load_module_p_or_skip()
+
 0.000_008	2020-01-15	T. R. Wyant
     Remove -perl-import-semantics. Instead, each of the original
     load_module_* subroutines got a load_module_p_* sibling that uses
