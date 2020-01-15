@@ -18,6 +18,9 @@ our $VERSION = '0.000_008';
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{
     load_module_ok
+    load_module_p_ok
+    load_module_or_skip
+    load_module_p_or_skip
     load_module_or_skip_all
     load_module_p_or_skip_all
 };
@@ -76,41 +79,92 @@ sub _load_module_ok {
 }
 
 
-sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
-    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
-    _load_module_or_skip_all( $opt, $module, $version, $import, $name )
+sub load_module_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,RequireFinalReturn)
+    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
+
+    _load_module( $opt, $module, $version, $import )
 	and return;
 
     my $ctx = Test2::API::context();
-    $ctx->plan( 0, SKIP => $name );
+    _or_skip( $opt, $module, $version, $import, $name, $num );
+    $ctx->release();
+    no warnings qw{ exiting };
+    last SKIP;
+}
+
+
+sub load_module_p_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,RequireFinalReturn)
+    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
+    $opt->{perl_import_semantics} = 1;
+
+    _load_module( $opt, $module, $version, $import )
+	and return;
+
+    my $ctx = Test2::API::context();
+    _or_skip( $opt, $module, $version, $import, $name, $num );
+    $ctx->release();
+    no warnings qw{ exiting };
+    last SKIP;
+}
+
+sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
+    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
+
+    _load_module( $opt, $module, $version, $import )
+	and return;
+
+    my $ctx = Test2::API::context();
+    _or_skip_all( $opt, $module, $version, $import, $name );
     $ctx->release();
     return;
 }
+
 
 sub load_module_p_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
     my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
     $opt->{perl_import_semantics} = 1;
-    _load_module_or_skip_all( $opt, $module, $version, $import, $name )
+
+    _load_module( $opt, $module, $version, $import )
 	and return;
 
     my $ctx = Test2::API::context();
-    $ctx->plan( 0, SKIP => $name );
+    _or_skip_all( $opt, $module, $version, $import, $name );
     $ctx->release();
     return;
 }
 
 
-sub _load_module_or_skip_all {
-    my ( $opt, $module, $version, $import, $name ) = @_;
+sub _load_module {
+    my ( $opt, $module, $version, $import ) = @_;
 
     local $@ = undef;
 
     my $eval = _build_load_eval( $opt, $module, $version, $import );
 
-    defined $name
-	or $name = sprintf 'Unable to %s', $eval;
-
     return _eval_in_pkg( $eval, _get_call_info() )
+}
+
+sub _or_skip {
+    my ( $opt, $module, $version, $import, $name, $num ) = @_;
+    defined $name
+	or $name = sprintf 'Unable to %s',
+	    _build_load_eval( $opt, $module, $version, $import );
+    $num = $num->[0] ||= 1;
+    my $ctx = Test2::API::context();
+    $ctx->skip( 'skipped test', $name ) for 1 .. $num;
+    $ctx->release();
+    return;
+}
+
+sub _or_skip_all {
+    my ( $opt, $module, $version, $import, $name ) = @_;
+    defined $name
+	or $name = sprintf 'Unable to %s',
+	    _build_load_eval( $opt, $module, $version, $import );
+    my $ctx = Test2::API::context();
+    $ctx->plan( 0, SKIP => $name );
+    $ctx->release();
+    return;
 }
 
 {
@@ -388,6 +442,31 @@ This subroutine is the same as L<load_module_ok()|/load_module_ok>, but
 Perl semantics are applied to the import list. That is, the value
 C<undef> means to import the default symbols, and C<[]> means not to
 call C<import()> at all.
+
+=head2 load_module_or_skip
+
+ load_module_or_skip( $module, $ver, $import, $name, $num );
+
+This subroutine performs the same loading actions as
+L<load_module_ok()|/load_module_ok>, but no tests are performed.
+Instead, all tests are skipped if any part of the load fails.
+
+The arguments are the same as L<load_module_ok()|/load_module_ok>,
+except that the fifth argument is the number of tests to skip,
+defaulting to C<1>.
+
+The C<$name> argument gives the skip message, and defaults to
+C<"Unable to ..."> where the ellipsis is the code used to load the
+module.
+
+=head2 load_module_p_or_skip
+
+ load_module_p_or_skip( $module, $ver, $import, $name, $num );
+
+This subroutine is the same as
+L<load_module_or_skip()|/load_module_or_skip>, but Perl semantics are
+applied to the import list. That is, the value C<undef> means to import
+the default symbols, and C<[]> means not to call C<import()> at all.
 
 =head2 load_module_or_skip_all
 

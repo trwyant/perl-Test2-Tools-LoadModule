@@ -40,13 +40,17 @@ sub cant_locate {
 	    unshift @INC,
 		sub {
 		    my $lvl = 0;
-		    while ( my $pkg = caller $lvl++ ) {
-			CLASS eq $pkg
-			    or next;
-			my $fh;
-			open $fh, '<', "t/lib/$_[1]"
-			    and return ( \'', $fh );
-			croak "Can't locate $_[1] in \@INC";
+		    while ( my $pkg = caller $lvl ) {
+			if ( CLASS eq $pkg ) {
+			    my $fh;
+			    open $fh, '<', "t/lib/$_[1]"
+				and return ( \'', $fh );
+			    croak "Can't locate $_[1] in \@INC";
+			}
+			$pkg =~ m/ \A Test2:: /smx
+			    and return;
+		    } continue {
+			$lvl++;
 		    }
 		    return;
 		};
