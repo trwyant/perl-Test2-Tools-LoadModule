@@ -10,7 +10,7 @@ use Exporter ();
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
 use Test2::Util qw{ pkg_to_file };
 
-our $VERSION = '0.000_007';
+our $VERSION = '0.000_008';
 
 our @EXPORT_OK = qw{
     -inc

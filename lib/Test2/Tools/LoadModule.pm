@@ -13,7 +13,7 @@ use Test2::Util ();
 
 use version 0.86 qw{ is_lax };	# for is_lax()
 
-our $VERSION = '0.000_007';
+our $VERSION = '0.000_008';
 
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
 qw{

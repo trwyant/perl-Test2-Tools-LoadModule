@@ -8,7 +8,7 @@ use warnings;
 use Carp;
 use Exporter qw{ import };
 
-our $VERSION = '0.000_007';
+our $VERSION = '0.000_008';
 
 our @EXPORT = qw{ and_accounted_for };
 our @EXPORT_OK = ( @EXPORT, qw{ under_the_tree } );

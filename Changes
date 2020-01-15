@@ -1,3 +1,11 @@
+0.000_008	2020-01-15	T. R. Wyant
+    Remove -perl-import-semantics. Instead, each of the original
+    load_module_* subroutines got a load_module_p_* sibling that uses
+    Perl import semantics.
+
+    Add -load-errors "pseudo-pragma", default true. This controls
+    whether or not $@ is appended to the diagnostics for a test failure.
+
 0.000_007	2020-01-14	T. R. Wyant
     Convert xt/ tests to use Test2::Tools::LoadModule so that I can use
     load_module_or_skip_all(). Those that needed access to a test
