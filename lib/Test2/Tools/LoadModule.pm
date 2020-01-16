@@ -367,7 +367,9 @@ The following subroutines are exported by default.
 
 =head2 load_module_ok
 
- load_module_ok( $module, $ver, $import, $name, $diag );
+ load_module_ok $module, $ver, $import, $name, $diag;
+
+Prototype: C<($;$$$$)>.
 
 This subroutine tests whether the specified module (B<not> file) can be
 loaded. All arguments are optional but the first. The arguments are:
@@ -380,8 +382,9 @@ This is required, and must not be C<undef>.
 
 =item $ver - the desired version number, or undef
 
-If defined, a version check is done. An exception is thrown if
-L<version|version> thinks the version number is invalid.
+If defined, the test fails if the installed module is not at least this
+version. An exception is thrown if L<version|version> thinks the version
+number is invalid.
 
 If C<undef>, no version check is done.
 
@@ -432,11 +435,11 @@ If you want anything imported from the loaded module to be available for
 subsequent compilation (e.g. variables, subroutine prototypes) you will
 need to put the call to this subroutine in a C<BEGIN { }> block:
 
- BEGIN { load_module_ok( 'My::Module' ) }
+ BEGIN { load_module_ok 'My::Module'; }
 
 =head2 load_module_p_ok
 
- load_module_p_ok( $module, $ver, $import, $name, $diag );
+ load_module_p_ok $module, $ver, $import, $name, $diag;
 
 This subroutine is the same as L<load_module_ok()|/load_module_ok>, but
 Perl semantics are applied to the import list. That is, the value
@@ -445,15 +448,17 @@ call C<import()> at all.
 
 =head2 load_module_or_skip
 
- load_module_or_skip( $module, $ver, $import, $name, $num );
+ load_module_or_skip $module, $ver, $import, $name, $num;
+
+Prototype: C<($;$$$$)>.
 
 This subroutine performs the same loading actions as
 L<load_module_ok()|/load_module_ok>, but no tests are performed.
-Instead, all tests are skipped if any part of the load fails.
+Instead, the specified number of tests is skipped if the load fails.
 
 The arguments are the same as L<load_module_ok()|/load_module_ok>,
-except that the fifth argument is the number of tests to skip,
-defaulting to C<1>.
+except that the fifth argument (C<$num> in the example) is the number of
+tests to skip, defaulting to C<1>.
 
 The C<$name> argument gives the skip message, and defaults to
 C<"Unable to ..."> where the ellipsis is the code used to load the
@@ -471,6 +476,8 @@ the default symbols, and C<[]> means not to call C<import()> at all.
 =head2 load_module_or_skip_all
 
  load_module_or_skip_all( $module, $ver, $import, $name );
+
+Prototype: C<($;$$$)>.
 
 This subroutine performs the same loading actions as
 L<load_module_ok()|/load_module_ok>, but no tests are performed.
