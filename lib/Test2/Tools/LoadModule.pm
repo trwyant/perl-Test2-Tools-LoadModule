@@ -37,7 +37,6 @@ our %EXPORT_TAGS = (
 
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
-use constant MODNAME_UNDEF	=> 'Module name must be defined';
 
 
 sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
@@ -168,7 +167,8 @@ sub _or_skip_all {
 }
 
 {
-    my $psr;
+    my $psr = Getopt::Long::Parser->new();
+    $psr->configure( qw{ posix_default } );
 
     # Because we want to work with Perl 5.8.1 we are limited to
     # Getopt::Long 2.34, and therefore getoptions(). So we expect the
@@ -177,7 +177,6 @@ sub _or_skip_all {
     sub _parse_import_opts {
 	my ( $opt ) = @_;
 	$opt ||= {};
-	$psr ||= Getopt::Long::Parser->new();
 	$psr->getoptions( $opt, qw{
 		load_errors|load-errors!
 	    },
@@ -185,19 +184,18 @@ sub _or_skip_all {
 	    or croak "Invalid import option";
 	return $opt;
     }
-
 }
 
 sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
-    local @ARGV = @_;	# See _parse_import_opts
+    ( my $class, local @ARGV ) = @_;	# See _parse_import_opts
     my $opt = _parse_import_opts();
     $^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
-    @_ = @ARGV;
+    @_ = ( $class, @ARGV );
     goto &Exporter::import;
 }
 
 sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
-    local @ARGV = @_;	# See _parse_import_opts
+    ( undef, local @ARGV ) = @_;	# See _parse_import_opts
     my $opt = _parse_import_opts();
     $^H{ _make_pragma_key() } = ! $opt->{$_} for keys %{ $opt };
     return;	# There is no Exporter::unimport
@@ -259,7 +257,7 @@ sub _validate_args {
     my ( $module, $version, $import, $name, $diag ) = @_;
 
     defined $module
-	or croak MODNAME_UNDEF;
+	or croak 'Module name must be defined';
 
     if ( defined $version ) {
 	is_lax( $version )
@@ -334,8 +332,10 @@ Test2::Tools::LoadModule - Test whether a module can be successfully loaded.
 
 =head1 DESCRIPTION
 
-This L<Test2::Tools|Test2::Tools> module provides functionality
-analogous to L<Test::More|Test::More>'s C<require_ok()> and C<use_ok()>.
+This L<Test2::Tools|Test2::Tools> module tests whether a module can be
+loaded, and optionally whether it has at least a given version and
+exports specified symbols. It can also skip tests, or skip all tests,
+based on these criteria.
 
 L<Test2::Manual::Testing::Migrating|Test2::Manual::Testing::Migrating>
 deals with migrating from L<Test::More|Test::More> to
@@ -413,16 +413,16 @@ The module is loaded, and version checks and imports are done if
 specified. The test passes if all these succeed, and fails otherwise.
 
 By default, C<$@> is appended to the diagnostics issued in the event of
-failure. If you do not want this, you can specify C<'-no-load-errors'>
-when you import this module. This has lexical scope, and you can
-explicitly turn it on again using
+failure. If you do not want this, you can specify C<'--no-load-errors'>
+as the first (or only) argument when you C<use> this module. This
+setting has lexical scope, and you can explicitly turn it on again using
 
- use Test2::Tools::LoadModule '-load-errors';
+ use Test2::Tools::LoadModule '--load-errors';
 
 Actually, you can also turn off the appending of C<$@> to diagnostics
 with
 
- no Test2::Tools::LoadModule '-load-errors';
+ no Test2::Tools::LoadModule '--load-errors';
 
 but you get no symbols imported this way, so do not do it unless you
 have already done a C<use>.
@@ -466,7 +466,7 @@ module.
 
 =head2 load_module_p_or_skip
 
- load_module_p_or_skip( $module, $ver, $import, $name, $num );
+ load_module_p_or_skip $module, $ver, $import, $name, $num;
 
 This subroutine is the same as
 L<load_module_or_skip()|/load_module_or_skip>, but Perl semantics are
@@ -475,7 +475,7 @@ the default symbols, and C<[]> means not to call C<import()> at all.
 
 =head2 load_module_or_skip_all
 
- load_module_or_skip_all( $module, $ver, $import, $name );
+ load_module_or_skip_all $module, $ver, $import, $name;
 
 Prototype: C<($;$$$)>.
 
@@ -496,7 +496,7 @@ or subtest.
 
 =head2 load_module_p_or_skip_all
 
- load_module_p_or_skip_all( $module, $ver, $import, $name );
+ load_module_p_or_skip_all $module, $ver, $import, $name;
 
 This subroutine is the same as
 L<load_module_or_skip_all()|/load_module_or_skip_all>, but Perl
