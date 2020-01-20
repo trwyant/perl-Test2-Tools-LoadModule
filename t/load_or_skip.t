@@ -8,82 +8,152 @@ use warnings;
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
 BEGIN {
     # The above loaded our module but did not import
-    CLASS->import();
+    CLASS->import( qw{ :all :private } );
 }
 
-# plan skip_all => 'TODO - problem with my -inc code';
-
 use lib qw{ inc };
-use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
+use My::Module::Test qw{
+    -inc
+    build_skip_reason
+    cant_locate
+    CHECK_MISSING_INFO
+};
 
+use constant SUB_NAME	=> "${CLASS}::load_module_or_skip";
+use constant SUB_NAME_P	=> "${CLASS}::load_module_p_or_skip";
+
+my $line;
 
 {
-    my $name = "use $CLASS (already loaded)";
-    my $ran;
-    SKIP: {
-	load_module_or_skip $CLASS;
-	pass $name;
-	$ran = 1;
-    };
-    ok $ran, "$name did not skip";
+    like
+	intercept {
+	    load_module_or_skip $CLASS;
+	},
+	array {
+	    end;
+	},
+	"use $CLASS (already loaded)";
 }
 
 
 {
     my $module = 'Present';
-    my $name	= "use $module (not previously loaded, Perl semantics)";
-    my $ran;
-    SKIP: {
-	load_module_p_or_skip $module;
-	pass $name;
-	$ran = 1;
-    };
-    ok $ran, "$name did not skip";
+
+    not_imported_ok 'and_accounted_for';
+
+    like
+	intercept {
+	    load_module_p_or_skip $module;
+	},
+	array {
+	    end;
+	},
+	"use $module (not previously loaded, Perl semantics)";
+
     imported_ok 'and_accounted_for';
 }
 
 
 {
     my $module	= 'Bogus0';
-    my $name	= "use $module (not loadable)";
-    my $ran;
-    SKIP: {
-	load_module_or_skip $module;
-	fail $name;
-    };
-    ok !$ran, "$name skipped";
+
+    like
+	intercept {
+	    SKIP: {
+		$line = __LINE__ + 1;
+		load_module_or_skip $module;
+	    }
+	},
+	array {
+
+	    event Skip => sub {
+		call name	=> 'skipped test';
+		call reason	=> build_skip_reason( $module );
+
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"use $module (not loadable) skips";
 }
 
 
 {
     my $module = 'BogusVersion';
     my $version = 99999;
-    my $name = "use $module $version (version error)";
-    my $ran;
-    SKIP: {
-	load_module_or_skip $module, $version;
-	fail $name;
-	$ran = 1;
-    };
-    ok !$ran, "$name skipped";
+
+    like
+	intercept {
+	    SKIP: {
+		$line = __LINE__ + 1;
+		load_module_or_skip $module, $version;
+	    }
+	},
+	array {
+
+	    event Skip => sub {
+		call name	=> 'skipped test';
+		call reason	=> build_skip_reason( $module, $version );
+
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"use $module $version (version error)";
 }
 
 
 {
     my $module = 'BogusVersion';
     my @import = qw{ no_such_export };
-    my $name = "use $module qw{ @import } (import error)";
-    my $ran;
-    SKIP: {
-	load_module_or_skip $module, undef, \@import;
-	fail $name;
-	$ran = 1;
-    };
-    ok !$ran, "$name skipped";
+
+    like
+	intercept {
+	    SKIP: {
+		$line = __LINE__ + 1;
+		load_module_or_skip $module, undef, \@import, undef, 2;
+	    }
+	},
+	array {
+
+	    event Skip => sub {
+		call name	=> 'skipped test';
+		call reason	=> build_skip_reason( $module, undef,
+		    \@import );
+
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    event Skip => sub {
+		call name	=> 'skipped test';
+		call reason	=> build_skip_reason( $module, undef,
+		    \@import );
+
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"use $module qw{ @import } (import error, skip 2)";
 }
 
 
 done_testing;
+
 
 1;
 

@@ -14,6 +14,7 @@ our $VERSION = '0.000_009';
 
 our @EXPORT_OK = qw{
     -inc
+    build_skip_reason
     cant_locate
     CHECK_MISSING_INFO
 };
@@ -22,6 +23,21 @@ our @EXPORT_OK = qw{
 # empty array. I find this nowhere documented, so I am checking for
 # both.
 use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
+
+{
+    # We jump through these hoops because we do not want to have the
+    # test routines assume that the module under test can be loaded.
+
+    my $code = eval {
+	require Test2::Tools::LoadModule;
+	Test2::Tools::LoadModule->can( '__build_load_eval' );
+    };
+
+    sub build_skip_reason {
+	my @arg = @_;
+	return sprintf 'Unable to %s', $code->( @arg );
+    }
+}
 
 sub cant_locate {
     my ( $module ) = @_;
