@@ -32,14 +32,17 @@ if ( $code = Test2::Tools::LoadModule->can( $sub_name ) ) {
 	or die "Module name required\n";
     $opt{import}
 	and @{ $opt{import} } = grep { $_ ne '[]' } @{ $opt{import} };
-    push @arg, $opt{$_} for qw{ version import name diagnostic };
-} elsif ( $code = __PACKAGE__->can( $sub_name ) ) {
-    push @arg, $opt{name};
-    $opt{diagnostic}
-	and push @arg, @{ $opt{diagnostic} };
+    push @arg, $opt{$_} for qw{ version import };
+} else {
+    $code = __PACKAGE__->can( $sub_name )
+	or die "Can not find $sub_name() (should not happen)";
 }
 
-pop @arg while ! defined $arg[-1];
+push @arg, $opt{name};
+$opt{diagnostic}
+    and push @arg, @{ $opt{diagnostic} };
+
+pop @arg while @arg && ! defined $arg[-1];
 
 {
     local $\ = "\n";

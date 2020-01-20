@@ -39,7 +39,7 @@ use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
 
 
-sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
     my @args = _validate_args( @_ );
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( @args );
@@ -47,7 +47,7 @@ sub load_module_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
     return $rslt;
 }
 
-sub load_module_p_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_p_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
     my @args = _validate_args( @_ );
     $args[0]{perl_import_semantics} = 1;
     my $ctx = Test2::API::context();
@@ -57,7 +57,7 @@ sub load_module_p_ok ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes)
 }
 
 sub _load_module_ok {
-    my ( $opt, $module, $version, $import, $name, $diag ) = @_;
+    my ( $opt, $module, $version, $import, $name, @diag ) = @_;
 
     local $@ = undef;
 
@@ -73,8 +73,10 @@ sub _load_module_ok {
 
     chomp $@;
 
-    return $ctx->fail_and_release( $name, @{ $diag },
-	$opt->{load_errors} ? ( $@ ) : () );
+    $opt->{load_errors}
+	and push @diag, $@;
+
+    return $ctx->fail_and_release( $name, @diag );
 }
 
 
@@ -148,7 +150,10 @@ sub _or_skip {
     defined $name
 	or $name = sprintf 'Unable to %s',
 	    _build_load_eval( $opt, $module, $version, $import );
-    $num = $num->[0] ||= 1;
+    defined $num
+	and $num =~ m/ [^0-9] /smx
+	and croak 'Number of skipped tests must be an unsigned integer';
+    $num ||= 1;
     my $ctx = Test2::API::context();
     $ctx->skip( 'skipped test', $name ) for 1 .. $num;
     $ctx->release();
@@ -254,7 +259,7 @@ sub __build_load_eval {
 
 
 sub _validate_args {
-    my ( $module, $version, $import, $name, $diag ) = @_;
+    my ( $module, $version, $import, $name, @diag ) = @_;
 
     defined $module
 	or croak 'Module name must be defined';
@@ -268,16 +273,9 @@ sub _validate_args {
 	or ARRAY_REF eq ref $import
 	or croak 'Import list must be an array reference, or undef';
 
-    defined $diag
-	or $diag = [];
-    ref $diag
-	or $diag = [ $diag ];
-    ARRAY_REF eq ref $diag
-	or croak 'Diagnostics must be a scalar, an array reference, or undef';
-
     my $opt = __get_hint_hash( 2 );
 
-    return ( $opt, $module, $version, $import, $name, $diag );
+    return ( $opt, $module, $version, $import, $name, @diag );
 }
 
 
@@ -367,9 +365,9 @@ The following subroutines are exported by default.
 
 =head2 load_module_ok
 
- load_module_ok $module, $ver, $import, $name, $diag;
+ load_module_ok $module, $ver, $import, $name, @diag;
 
-Prototype: C<($;$$$$)>.
+Prototype: C<($;$$$@)>.
 
 This subroutine tests whether the specified module (B<not> file) can be
 loaded. All arguments are optional but the first. The arguments are:
@@ -400,10 +398,9 @@ If C<undef>, the name defaults to the code used to load the module.
 B<Note> that this code, and therefore the default name, may change
 without notice.
 
-=item $diag - the desired diagnostics as an array ref, or undef
+=item @diag - the desired diagnostics
 
-If C<undef>, an empty array is used. Diagnostics are only issued on
-failure.
+Diagnostics are only issued on failure.
 
 =back
 
@@ -439,7 +436,7 @@ need to put the call to this subroutine in a C<BEGIN { }> block:
 
 =head2 load_module_p_ok
 
- load_module_p_ok $module, $ver, $import, $name, $diag;
+ load_module_p_ok $module, $ver, $import, $name, @diag;
 
 This subroutine is the same as L<load_module_ok()|/load_module_ok>, but
 Perl semantics are applied to the import list. That is, the value

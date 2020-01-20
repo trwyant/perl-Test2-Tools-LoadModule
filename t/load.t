@@ -196,7 +196,7 @@ my $line;
 
     like
 	intercept {
-	    load_module_ok( $module, undef, [], undef, [ 'Fubar' ] ); $line = __LINE__;
+	    load_module_ok( $module, undef, [], undef, 'Fubar' ); $line = __LINE__;
 	},
 	array {
 
