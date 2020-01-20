@@ -17,17 +17,42 @@ our $VERSION = '0.000_010';
 my %opt;
 
 GetOptions( \%opt,
-    qw{ diagnostic|skip=s@ import=s@ name=s version=s },
+    qw{ context! diagnostic|skip=s@ import=s@ name=s version=s },
     help => sub { pod2usage( { -verbose => 2 } ) },
 )
     and @ARGV
     and $ARGV[0] =~ m/ \A [[:alpha:]] /smx
-    and __PACKAGE__->can( $ARGV[0] )
     or pod2usage( { -verbose => 0 } );
 
-my ( $code, @want_opt );
+my $code;
 my ( $sub_name, @arg ) = @ARGV;
-if ( $code = Test2::Tools::LoadModule->can( $sub_name ) ) {
+if ( $opt{context} ) {
+    require Test2::API;
+    require Test2::API::Context;
+    my $method = Test2::API::Context->can( $sub_name )
+	or pod2usage( {
+	-message	=> "Test2::API::Context->$sub_name() not found",
+	-verbose	=> 0,
+    } );
+    my %slurp_arg = (
+	ok	=> 2,
+    );
+    $code = $slurp_arg{$sub_name} ? sub {
+	my @arg = @_;
+	my @slurp = splice @arg, $slurp_arg{$sub_name};
+	push @arg, \@slurp;
+	my $ctx = Test2::API::context();
+	$method->( $ctx, @arg );
+	$ctx->release();
+    } : $sub_name =~ m/ release \z /smx ? sub {
+	my $ctx = Test2::API::context();
+	return $method->( $ctx, @_ );
+    } : sub {
+	my $ctx = Test2::API::context();
+	$method->( $ctx, @_ );
+	$ctx->release();
+    };
+} elsif ( $code = Test2::Tools::LoadModule->can( $sub_name ) ) {
     defined $arg[0]
 	or die "Module name required\n";
     $opt{import}
@@ -35,7 +60,10 @@ if ( $code = Test2::Tools::LoadModule->can( $sub_name ) ) {
     push @arg, $opt{$_} for qw{ version import };
 } else {
     $code = __PACKAGE__->can( $sub_name )
-	or die "Can not find $sub_name() (should not happen)";
+	or pod2usage( {
+	    -message	=> "$sub_name() not found",
+	    -verbose	=> 0,
+	} );
 }
 
 push @arg, $opt{name};
@@ -80,6 +108,20 @@ events - Execute load_module_*() and dump the generated events.
  events -version
 
 =head1 OPTIONS
+
+=head2 -context
+
+If this Boolean option is asserted, the first argument is interpreted as
+the name of a method attached to a context object. The context will be
+acquired, the method executed, and the context released.
+
+The context's C<ok()> method is special-cased to handle the fact that it
+takes diagnostics as an array reference rather than an array. Any other
+methods that take structured arguments (e.g. C<send_ev2()> will flunk.
+
+As a piece of pure and unadultrated ad-hocery, if the method name ends
+with C<'release'>, no explicit release is done. Instead, the value of
+the method is returned, for all the good that does.
 
 =head2 -diagnostic
 
