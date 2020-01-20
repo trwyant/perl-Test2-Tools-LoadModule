@@ -20,6 +20,8 @@ t/lib/Present.pm
 t/load.t
 t/load_or_skip.t
 t/load_or_skip_all.t
+tools/README
+tools/events
 xt/author/changes.t
 xt/author/critic.t
 xt/author/executable.t
