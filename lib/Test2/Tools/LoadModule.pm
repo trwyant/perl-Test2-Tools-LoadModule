@@ -60,7 +60,7 @@ sub _load_module_ok {
 
     local $@ = undef;
 
-    my $eval = _build_load_eval( $opt, $module, $version, $import );
+    my $eval = __build_load_eval( $opt, $module, $version, $import );
 
     defined $name
 	or $name = $eval;
@@ -139,7 +139,7 @@ sub _load_module {
 
     local $@ = undef;
 
-    my $eval = _build_load_eval( $opt, $module, $version, $import );
+    my $eval = __build_load_eval( $opt, $module, $version, $import );
 
     return _eval_in_pkg( $eval, _get_call_info() )
 }
@@ -148,7 +148,7 @@ sub _or_skip {
     my ( $opt, $module, $version, $import, $name, $num ) = @_;
     defined $name
 	or $name = sprintf 'Unable to %s',
-	    _build_load_eval( $opt, $module, $version, $import );
+	    __build_load_eval( $opt, $module, $version, $import );
     defined $num
 	and $num =~ m/ [^0-9] /smx
 	and croak 'Number of skipped tests must be an unsigned integer';
@@ -163,7 +163,7 @@ sub _or_skip_all {
     my ( $opt, $module, $version, $import, $name ) = @_;
     defined $name
 	or $name = sprintf 'Unable to %s',
-	    _build_load_eval( $opt, $module, $version, $import );
+	    __build_load_eval( $opt, $module, $version, $import );
     my $ctx = Test2::API::context();
     $ctx->plan( 0, SKIP => $name );
     $ctx->release();
@@ -228,10 +228,12 @@ sub _make_pragma_key {
     }
 }
 
-# Note single leading underscore in name. This is the one to use
-# internally.
-sub _build_load_eval {
-    my ( $opt, $module, $version, $import ) = @_;
+
+sub __build_load_eval {
+    my @arg = @_;
+    HASH_REF eq ref $arg[0]
+	or unshift @arg, {};
+    my ( $opt, $module, $version, $import ) = @arg;
     my @eval = "use $module";
 
     defined $version
@@ -246,14 +248,6 @@ sub _build_load_eval {
     }
 
     return "@eval";
-}
-
-sub __build_load_eval {
-    __PACKAGE__ eq caller
-	and confess 'Testing interface not to be used internally';
-    HASH_REF eq ref $_[0]
-	or unshift @_, scalar _get_hint_hash( 1 );
-    goto &_build_load_eval;
 }
 
 
