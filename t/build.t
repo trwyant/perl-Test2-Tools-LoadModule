@@ -12,10 +12,6 @@ BEGIN {
 }
 
 
-sub perl_import_semantics {
-    return __get_hint_hash( 1 )->{perl_import_semantics} || 0;
-}
-
 is __build_load_eval( {}, 'Fubar' ),
     'use Fubar ()',
     'Module name only, load semantics';

@@ -27,7 +27,6 @@ qw{
 
 our @EXPORT_OK = ( @EXPORT, qw{
     __build_load_eval
-    __get_hint_hash
 } );
 
 our %EXPORT_TAGS = (
@@ -215,7 +214,7 @@ sub _make_pragma_key {
 	load_errors	=> 1,
     );
 
-    sub __get_hint_hash {
+    sub _get_hint_hash {
 	my ( $level ) = @_;
 	$level ||= 0;
 	my $hint_hash = ( caller( $level ) )[ 10 ];
@@ -253,7 +252,7 @@ sub __build_load_eval {
     __PACKAGE__ eq caller
 	and confess 'Testing interface not to be used internally';
     HASH_REF eq ref $_[0]
-	or unshift @_, scalar __get_hint_hash( 1 );
+	or unshift @_, scalar _get_hint_hash( 1 );
     goto &_build_load_eval;
 }
 
@@ -273,7 +272,7 @@ sub _validate_args {
 	or ARRAY_REF eq ref $import
 	or croak 'Import list must be an array reference, or undef';
 
-    my $opt = __get_hint_hash( 2 );
+    my $opt = _get_hint_hash( 2 );
 
     return ( $opt, $module, $version, $import, $name, @diag );
 }
