@@ -8,7 +8,7 @@ use warnings;
 use Carp;
 use Exporter qw{ import };
 
-our $VERSION = '0.000_009';
+our $VERSION = '0.000_010';
 
 
 1;

@@ -1,3 +1,16 @@
+0.000_010	2020-01-20	T. R. Wyant
+    Make the diagnostics argument an array, rather than an array
+    reference. This is to be consistent with at least the majority of
+    the tools in Test2-Suite, with the side effect of making parsing the
+    argument lists easier.
+
+    Redo skip tests in terms of events.
+
+    Options to import() and unimport() are now parsed in POSIX mode,
+    meaning that they need to come first. This way I could also allow
+    the same options to subroutines if I desire -- though so far I do
+    not.
+
 0.000_009	2020-01-15	T. R. Wyant
     Add load_module_or_skip(), load_module_p_or_skip()
 
