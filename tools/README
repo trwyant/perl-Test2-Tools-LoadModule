@@ -10,4 +10,9 @@ events
     are specified as command arguments. The rest of the possible
     subroutine arguments are specified as options.
 
+version_regex
+    Builds the LAX_VERSION constant in Test2::Tools::LoadModule from
+    $version::regex::LAX. Use with caution, since version::regex is
+    completely undocumented.
+
 # ex: set filetype=text textwidth=72 autoindent :

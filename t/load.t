@@ -18,7 +18,6 @@ use constant SUB_NAME	=> "${CLASS}::load_module_ok";
 
 my $line;
 
-
 {
     like
 	intercept {

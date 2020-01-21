@@ -13,12 +13,6 @@ use Test2::Util ();
 
 use base qw{ Exporter };
 
-use version 0.86 qw{ is_lax };	# for is_lax(). This version is missing
-				# from meta::cpan, but 0.87 contains
-				# use 5.005_04;
-				# perlver claims version 0.87's syntax
-				# is good back to 5.5.3.
-
 our $VERSION = '0.000_010';
 
 our @EXPORT =	## no critic (ProhibitAutomaticExportation)
@@ -43,6 +37,19 @@ our %EXPORT_TAGS = (
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
 
+
+# The following cribbed shamelessly from version::regex 0.9924,
+# after being munged to suit by tools/version_regex 0.000_010.
+# This technical debt is incurred to avoid having to require a version
+# of the version module large enough to export the is_lax() subroutine.
+use constant LAX_VERSION	=> qr/(?x: (?x:
+	v (?-x:[0-9]+) (?-x: (?-x:\.[0-9]+)+ (?-x:_[0-9]+)? )?
+	|
+	(?-x:[0-9]+)? (?-x:\.[0-9]+){2,} (?-x:_[0-9]+)?
+    ) | (?x: (?-x:[0-9]+) (?-x: (?-x:\.[0-9]+) | \. )? (?-x:_[0-9]+)?
+	|
+	(?-x:\.[0-9]+) (?-x:_[0-9]+)?
+    ) )/;
 
 sub load_module_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
     my @args = _validate_args( @_ );
@@ -267,7 +274,7 @@ sub _validate_args {
 	or croak 'Module name must be defined';
 
     if ( defined $version ) {
-	is_lax( $version )
+	$version =~ LAX_VERSION
 	    or croak "Version '$version' is invalid";
     }
 

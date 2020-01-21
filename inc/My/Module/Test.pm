@@ -40,9 +40,10 @@ use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
 }
 
 sub cant_locate {
-    my ( $module ) = @_;
+    my ( $module, $prefix ) = @_;
     my $fn = pkg_to_file( $module );
-    return match qr<\ACan't locate $fn in \@INC\b>sm;
+    $prefix ||= '';
+    return match qr<\A\Q$prefix\ECan't locate $fn in \@INC\b>sm;
 }
 
 {
