@@ -6,12 +6,18 @@ use strict;
 use warnings;
 
 use Carp;
-use Exporter ();
+use Exporter 5.567;	# Comes with Perl 5.8.1.
 use Getopt::Long 2.34;	# Comes with Perl 5.8.1.
 use Test2::API ();
 use Test2::Util ();
 
-use version 0.86 qw{ is_lax };	# for is_lax()
+use base qw{ Exporter };
+
+use version 0.86 qw{ is_lax };	# for is_lax(). This version is missing
+				# from meta::cpan, but 0.87 contains
+				# use 5.005_04;
+				# perlver claims version 0.87's syntax
+				# is good back to 5.5.3.
 
 our $VERSION = '0.000_010';
 
@@ -192,10 +198,13 @@ sub _or_skip_all {
 
 sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
     ( my $class, local @ARGV ) = @_;	# See _parse_import_opts
-    my $opt = _parse_import_opts();
-    $^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
-    @_ = ( $class, @ARGV );
-    goto &Exporter::import;
+    if ( @ARGV ) {
+	my $opt = _parse_import_opts();
+	$^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
+	@ARGV
+	    or return;
+    }
+    return $class->export_to_level( 1, $class, @ARGV );
 }
 
 sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
@@ -402,30 +411,34 @@ Argument validation failures are signalled by C<croak()>.
 The module is loaded, and version checks and imports are done if
 specified. The test passes if all these succeed, and fails otherwise.
 
-By default, C<$@> is appended to the diagnostics issued in the event of
-failure. If you do not want this, you can specify C<'--no-load-errors'>
-as the first (or only) argument when you C<use> this module. This
-setting has lexical scope, and you can explicitly turn it on again using
-
- use Test2::Tools::LoadModule '--load-errors';
-
-Actually, you can also turn off the appending of C<$@> to diagnostics
-with
-
- no Test2::Tools::LoadModule '--load-errors';
-
-but you get no symbols imported this way, so do not do it unless you
-have already done a C<use>.
-
-B<Note> that any imports take place when this subroutine is called,
-which is normally at run time. Imported subroutines will be callable,
-provided you do not make use of prototypes or attributes.
+B<Note> that any imports from the loaded module take place when this
+subroutine is called, which is normally at run time. Imported
+subroutines will be callable, provided you do not make use of prototypes
+or attributes.
 
 If you want anything imported from the loaded module to be available for
 subsequent compilation (e.g. variables, subroutine prototypes) you will
 need to put the call to this subroutine in a C<BEGIN { }> block:
 
  BEGIN { load_module_ok 'My::Module'; }
+
+By default, C<$@> is appended to the diagnostics issued in the event of
+a load failure. If you do not want this, you can specify
+
+ no Test2::Tools::LoadModule '--load-errors';
+
+This setting has lexical scope, and you can explicitly turn it on again
+using
+
+ use Test2::Tools::LoadModule '--load-errors';
+
+You can also change the default setting when you first load this module
+using
+
+ use Test2::Tools::LoadModule qw{ --no-load-errors :all };
+
+The C<:all> is necessary because if an option is specified the import
+routine assumes its only job is to change the value of the option.
 
 =head2 load_module_p_ok
 

@@ -69,8 +69,8 @@ sub requires {
 ##  if ( ! $self->distribution() ) {
 ##  }
     return +{
-	Exporter	=> 0,
-	'Getopt::Long'	=> 2.34,
+	Exporter	=> 5.567,	# Comes with Perl 5.8.1
+	'Getopt::Long'	=> 2.34,	# Comes with Perl 5.8.1
 	'Test2::API'	=> 0,
 	'Test2::Util'	=> 0,
 	strict		=> 0,
