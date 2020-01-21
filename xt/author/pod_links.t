@@ -13,7 +13,7 @@ BEGIN {	# Need BEGIN block so compiler sees constants.
 Test::Pod::LinkCheck::Lite->new(
     prohibit_redirect	=> ALLOW_REDIRECT_TO_INDEX,
 )->all_pod_files_ok(
-    qw{ blib eg },
+    qw{ blib eg tools },
 );
 
 done_testing;

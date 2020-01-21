@@ -24,7 +24,7 @@ GetOptions( \%opt,
     and $ARGV[0] =~ m/ \A [[:alpha:]] /smx
     or pod2usage( { -verbose => 0 } );
 
-my $code;
+my ( $code, $tplt );
 my ( $sub_name, @arg ) = @ARGV;
 if ( $opt{context} ) {
     require Test2::API;
@@ -34,23 +34,18 @@ if ( $opt{context} ) {
 	-message	=> "Test2::API::Context->$sub_name() not found",
 	-verbose	=> 0,
     } );
-    my %slurp_arg = (
-	ok	=> 2,
-    );
-    $code = $slurp_arg{$sub_name} ? sub {
+    $tplt = "# \$ctx->%s( %s );\n";
+    $code = sub {
 	my @arg = @_;
-	my @slurp = splice @arg, $slurp_arg{$sub_name};
-	push @arg, \@slurp;
-	my $ctx = Test2::API::context();
-	$method->( $ctx, @arg );
-	$ctx->release();
-    } : $sub_name =~ m/ release \z /smx ? sub {
-	my $ctx = Test2::API::context();
-	return $method->( $ctx, @_ );
-    } : sub {
-	my $ctx = Test2::API::context();
-	$method->( $ctx, @_ );
-	$ctx->release();
+	my $released;
+	my $ctx = Test2::API::context(
+	    on_release	=> sub { $released = 1 },
+	);
+	my $code = __PACKAGE__->can( "_call__context__$sub_name" ) ||
+	    \&_call__context__;
+	$code->( $method, $ctx, @arg );
+	$released
+	    or $ctx->release();
     };
 } elsif ( $code = Test2::Tools::LoadModule->can( $sub_name ) ) {
     defined $arg[0]
@@ -66,16 +61,15 @@ if ( $opt{context} ) {
 	} );
 }
 
+$tplt ||= "# %s %s;\n";
+
 push @arg, $opt{name};
 $opt{diagnostic}
     and push @arg, @{ $opt{diagnostic} };
 
 pop @arg while @arg && ! defined $arg[-1];
 
-{
-    local $\ = "\n";
-    print "$sub_name ", join ', ', map { _quote_value( $_ ) } @arg;
-}
+printf $tplt, $sub_name, join ', ', map { _quote_value( $_ ) } @arg;
 
 my $events = intercept {
     SKIP: {
@@ -84,6 +78,20 @@ my $events = intercept {
 };
 
 print dump_events $events;
+
+sub _call__context__ {
+    my ( $method, $ctx, @arg ) = @_;
+    $method->( $ctx, @arg );
+    return;
+}
+
+sub _call__context__ok {
+    my ( $method, $ctx, @arg ) = @_;
+    my @slurp = splice @arg, 2;;
+    push @arg, \@slurp;
+    $method->( $ctx, @arg );
+    return;
+}
 
 sub _quote_value {
     my ( $value ) = @_;
@@ -115,20 +123,18 @@ If this Boolean option is asserted, the first argument is interpreted as
 the name of a method attached to a context object. The context will be
 acquired, the method executed, and the context released.
 
+Subsequent arguments are passed verbatim to the method, followed by the
+L<-name|/-name> and L<-diagnostic|/-diagnostic> options in that order.
+
 The context's C<ok()> method is special-cased to handle the fact that it
 takes diagnostics as an array reference rather than an array. Any other
 methods that take structured arguments (e.g. C<send_ev2()> will flunk.
-
-As a piece of pure and unadultrated ad-hocery, if the method name ends
-with C<'release'>, no explicit release is done. Instead, the value of
-the method is returned, for all the good that does.
 
 =head2 -diagnostic
 
  -diagnostic 'This is a diagnostic'
 
-This option specifies a diagnostic for C<load_module_ok()> or
-C<load_module_p_ok()>. It can be specified more than once.
+This option specifies a diagnostic. It can be specified more than once.
 
 =head2 -help
 
@@ -169,12 +175,16 @@ L<Test2::V0|Test2::V0> routine that generates events.
 The command-line arguments are the subroutine to call, and any required
 arguments of that subroutine. We assume that any subroutine we are
 interested in takes an optional name and optional diagnostics, provided
-by the L<-name|/-name> and L<-diagnostic|/diagnostic> options,
-respectively. If the subroutine was found in
+by the L<-name|/-name> and L<-diagnostic|/-diagnostic> options,
+respectively.
+
+If the subroutine was found in
 L<Test2::Tools::LoadModule|Test2::Tools::LoadModule>, we assume it
 requires one additional mandatory argument (the module name), followed
 by the L<-version|/-version>, L<-import|/-import>, L<-name|/-name>, and
-L<-diagnostic|/-diagnostic> arguments, respectively.
+L<-diagnostic|/-diagnostic> options in that order. Otherwise we assume
+it takes all command-line arguments as specified, followed by the
+L<-name|/-name> and L<-diagnostic|/-diagnostic> options in that order.
 
 =over
 
