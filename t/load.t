@@ -167,7 +167,7 @@ my $line;
 {
     my $module = 'Bogus0';
 
-    no Test2::Tools::LoadModule '-load-errors';
+    use Test2::Tools::LoadModule -load_error => 0;
 
     like
 	intercept {

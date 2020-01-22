@@ -11,6 +11,8 @@ BEGIN {
     CLASS->import( qw{ :more :private } );
 }
 
+use Test2::Tools::LoadModule -load_error => TEST_MORE_LOAD_ERROR;
+
 use lib qw{ inc };
 use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
@@ -19,6 +21,7 @@ use constant SUB_NAME	=> "${CLASS}::use_ok";
 my $p = {
     perl_import_semantics	=> 1,
 };
+
 my $line;
 
 {
@@ -108,10 +111,10 @@ my $line;
 		call name	=> __build_load_eval( $p, $module );
 		call info	=> array {
 		    item object {
-			call details	=> "Tried to use '$module'.";
+			call details	=> error_context( $module );
 		    };
 		    item object {
-			call details	=> cant_locate( $module, 'Error:  ' );
+			call details	=> cant_locate( $module );
 		    };
 		    end;
 		};
@@ -141,7 +144,7 @@ my $line;
 		call name	=> __build_load_eval( $p, $module, $version );
 		call info	=> array {
 		    item object {
-			call details	=> "Tried to use '$module'.";
+			call details	=> error_context( $module );
 		    };
 		    item object {
 			call details	=>
@@ -176,7 +179,7 @@ my $line;
 		    $module, undef, \@import );
 		call info	=> array {
 		    item object {
-			call details	=> "Tried to use '$module'.";
+			call details	=> error_context( $module );
 		    };
 		    item object {
 			call details	=>
@@ -197,6 +200,11 @@ my $line;
 
 
 done_testing;
+
+sub error_context {
+    my ( $module ) = @_;
+    return sprintf TEST_MORE_ERROR_CONTEXT, use => $module;
+}
 
 1;
 

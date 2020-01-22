@@ -11,6 +11,8 @@ BEGIN {
     CLASS->import( qw{ :more :private } );
 }
 
+use Test2::Tools::LoadModule -load_error => TEST_MORE_LOAD_ERROR;
+
 use lib qw{ inc };
 use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
 
@@ -76,10 +78,10 @@ my $line;
 		call name	=> "require $module;";
 		call info	=> array {
 		    item object {
-			call details	=> "Tried to require '$module'.";
+			call details	=> error_context( $module );
 		    };
 		    item object {
-			call details	=> cant_locate( $module, 'Error:  ' );
+			call details	=> cant_locate( $module );
 		    };
 		    end;
 		};
@@ -96,6 +98,11 @@ my $line;
 
 
 done_testing;
+
+sub error_context {
+    my ( $module ) = @_;
+    return sprintf TEST_MORE_ERROR_CONTEXT, require => $module;
+}
 
 1;
 

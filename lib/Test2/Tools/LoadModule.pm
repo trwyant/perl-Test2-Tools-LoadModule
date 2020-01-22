@@ -32,18 +32,22 @@ our $VERSION = '0.000_010';
 
     my @private = qw{
 	__build_load_eval
+	__get_hint_hash
+	TEST_MORE_ERROR_CONTEXT
+	TEST_MORE_LOAD_ERROR
     };
 
     our @EXPORT_OK = ( @test2, @more, @private );
 
-    our @EXPORT = @test2;	## no critic (ProhibitAutomaticExportation)
-
     our %EXPORT_TAGS = (
 	all		=> [ @test2, @more ],
-	test2	=> \@test2,
+	default	=> \@test2,
 	more	=> \@more,
 	private	=> \@private,
+	test2	=> \@test2,
     );
+
+    our @EXPORT = @{ $EXPORT_TAGS{default} };	## no critic (ProhibitAutomaticExportation)
 }
 
 use constant ARRAY_REF		=> ref [];
@@ -62,6 +66,12 @@ use constant LAX_VERSION	=> qr/(?x: (?x:
 	|
 	(?-x:\.[0-9]+) (?-x:_[0-9]+)?
     ) )/;
+
+use constant TEST_MORE_ERROR_CONTEXT	=> q/Tried to %s '%s'./;
+use constant TEST_MORE_LOAD_ERROR	=> 'Error:  %s';
+use constant TEST_MORE_OPT		=> {
+    load_error	=> TEST_MORE_LOAD_ERROR,
+};
 
 sub load_module_ok ($;$$$@) {
     my @args = _validate_args( @_ );
@@ -97,8 +107,8 @@ sub _load_module_ok {
 
     chomp $@;
 
-    $opt->{load_errors}
-	and push @diag, sprintf( $opt->{load_error_format} || '%s', $@ );
+    $opt->{load_error}
+	and push @diag, sprintf $opt->{load_error}, $@;
 
     return $ctx->fail_and_release( $name, @diag );
 }
@@ -201,16 +211,23 @@ sub _or_skip_all {
 
     # Because we want to work with Perl 5.8.1 we are limited to
     # Getopt::Long 2.34, and therefore getoptions(). So we expect the
-    # arguments to be in a suitably-localized @ARGV, and we will just
-    # return the options hash, so we expect no arguments.
+    # arguments to be in a suitably-localized @ARGV. The optional
+    # argument is a reference to a hash into which we place the option
+    # values. If omitted, we create a reference to a new hash. Either
+    # way the hash reference gets returned.
     sub _parse_import_opts {
 	my ( $opt ) = @_;
 	$opt ||= {};
 	$psr->getoptions( $opt, qw{
-		load_errors|load-errors!
+		load_error=s
 	    },
 	)
 	    or croak "Invalid import option";
+	if ( $opt->{load_error} ) {
+	    $opt->{load_error} =~ m/ ( %+ ) [ #0+-]* [0-9]* s /smx
+		and length( $1 ) % 2
+		or $opt->{load_error} = '%s';
+	}
 	return $opt;
     }
 }
@@ -226,23 +243,12 @@ sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
     return $class->export_to_level( 1, $class, @ARGV );
 }
 
-sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
-    ( undef, local @ARGV ) = @_;	# See _parse_import_opts
-    my $opt = _parse_import_opts();
-    $^H{ _make_pragma_key() } = ! $opt->{$_} for keys %{ $opt };
-    return;	# There is no Exporter::unimport
-}
-
 sub require_ok ($) {
     my ( $module ) = @_;
     my $ctx = Test2::API::context();
-    my $rslt = _load_module_ok(
-	{
-	    load_errors	=> 1,
-	    load_error_format	=> 'Error:  %s',
-	},
+    my $rslt = _load_module_ok( TEST_MORE_OPT,
 	$module, undef, undef, "require $module;",
-	"Tried to require '$module'.",
+	sprintf( TEST_MORE_ERROR_CONTEXT, require => $module ),
     );
     $ctx->release();
     return $rslt;
@@ -253,12 +259,10 @@ sub use_ok ($;@) {
     my $version = ( defined $arg[0] && $arg[0] =~ LAX_VERSION ) ?
 	shift @arg : undef;
     my $ctx = Test2::API::context();
-    my $rslt = _load_module_ok(
-	{
-	    load_errors			=> 1,
-	    load_error_format		=> 'Error:  %s',
-	},
-	$module, $version, \@arg, undef, "Tried to use '$module'." );
+    my $rslt = _load_module_ok( TEST_MORE_OPT,
+	$module, $version, \@arg, undef,
+	sprintf( TEST_MORE_ERROR_CONTEXT, use => $module ),
+    );
     $ctx->release();
     return $rslt;
 }
@@ -269,10 +273,10 @@ sub _make_pragma_key {
 
 {
     my %default_hint = (
-	load_errors	=> 1,
+	load_error	=> '%s',
     );
 
-    sub _get_hint_hash {
+    sub __get_hint_hash {
 	my ( $level ) = @_;
 	$level ||= 0;
 	my $hint_hash = ( caller( $level ) )[ 10 ];
@@ -289,7 +293,6 @@ sub _make_pragma_key {
 
 sub __build_load_eval {
     my @arg = @_;
-    $DB::single = 1;
     HASH_REF eq ref $arg[0]
 	or unshift @arg, {};
     my ( $opt, $module, $version, $import ) = @arg;
@@ -325,7 +328,7 @@ sub _validate_args {
 	or ARRAY_REF eq ref $import
 	or croak 'Import list must be an array reference, or undef';
 
-    my $opt = _get_hint_hash( 2 );
+    my $opt = __get_hint_hash( 2 );
 
     return ( $opt, $module, $version, $import, $name, @diag );
 }
@@ -413,11 +416,20 @@ eliminated.
 
 =head1 SUBROUTINES
 
-All subroutines documented below are exportable. The C<load_module_*()>
-subroutines are exportable by default, or using the C<:test2> tag.
-Subroutines L<require_ok()|/require_ok> and L<use_ok()|/use_ok> are
-exportable using the C<:more> tag. All are exportable using the C<:all>
-tag.
+All subroutines documented below are exportable, either by name or using
+one of the following tags:
+
+=over
+
+=item :all exports all public exports;
+
+=item :default exports the default exports (i.e. :test2);
+
+=item :more exports require_ok() and use_ok();
+
+=item :test2 exports load_module_*(), and is the default.
+
+=back
 
 =head2 load_module_ok
 
@@ -477,22 +489,8 @@ need to put the call to this subroutine in a C<BEGIN { }> block:
  BEGIN { load_module_ok 'My::Module'; }
 
 By default, C<$@> is appended to the diagnostics issued in the event of
-a load failure. If you do not want this, you can specify
-
- no Test2::Tools::LoadModule '--load-errors';
-
-This setting has lexical scope, and you can explicitly turn it on again
-using
-
- use Test2::Tools::LoadModule '--load-errors';
-
-You can also change the default setting when you first load this module
-using
-
- use Test2::Tools::LoadModule qw{ --no-load-errors :test2 };
-
-The C<:test2> is necessary because if an option is specified the import
-routine assumes its only job is to change the value of the option.
+a load failure. If you want to omit this, or embed the value in your own
+text, see L<LOAD ERROR FORMATTING|/LOAD ERROR FORMATTING>, below.
 
 =head2 load_module_p_ok
 
@@ -565,7 +563,7 @@ C<import()> at all.
 
  require_ok $module;
 
-Prototype: C<($)>;
+Prototype: C<($)>.
 
 This subroutine is more or less the same as the L<Test::More|Test::More>
 subroutine of the same name. It's actually a C<use()> that gets issued,
@@ -576,8 +574,60 @@ but without a version check or importing anything.
  use_ok $module, @imports;
  use_ok $module, $version, @imports;
 
+Prototype: C<($;@)>.
+
 This subroutine is more or less the same as the L<Test::More|Test::More>
 subroutine of the same name.
+
+=head2 LOAD ERROR FORMATTING
+
+By default, all subroutines that display diagnostics on failure include
+the value of C<$@> produced by the failure as the last (or only)
+diagnostic. You can control the presence and formatting of this by
+specifying the C<-load_error> option when you load this module, or at
+any subsequent point in the code.
+
+The value of this option is interpreted as follows:
+
+=over
+
+=item A string containing C<'%s'>
+
+or anything that looks like an C<sprintf()> string substitution is
+interpreted verbatim as the L<sprintf> format to use to format the
+error;
+
+=item Any other true value (e.g. C<1>)
+
+specifies the default, C<'%s'>;
+
+=item Any false value (e.g. C<0>)
+
+specifies that C<$@> should not be appended to the diagnostics at all.
+
+=back
+
+For example, if you want your diagnostics to look like the
+L<Test::More|Test::More> C<require_ok()> diagnostic, you can do
+something like this:
+
+ {	# Begin scope
+   use Test2::Tools::LoadModule -load_error => 'Error:  %s';
+   load_module_ok $my_module, undef, undef,
+     "require $my_module", "Tried to require '$my_module'.";
+   ...
+ }
+ # -load_error reverts to whatever it was before.
+
+B<Note> that the options parse uses POSIX conventions. That is, options
+must come before non-option arguments if any, and although (e.g.)
+C<'--load_error=1'> will parse, C<'-load_error=1'> will not.
+
+B<Note also> that, while you can specify options on your initial load,
+if you do so you must specify your desired imports explicitly, as (e.g.)
+
+ use Test2::Tools::LoadModule
+    -load_error => 'Bummer! %s', ':default';
 
 =head1 SEE ALSO
 

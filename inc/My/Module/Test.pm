@@ -7,7 +7,7 @@ use warnings;
 
 use Carp qw{ croak };
 use Exporter ();
-use Test2::V0 -target => 'Test2::Tools::LoadModule';
+use Test2::V0;
 use Test2::Util qw{ pkg_to_file };
 
 our $VERSION = '0.000_010';
@@ -24,6 +24,8 @@ our @EXPORT_OK = qw{
 # both.
 use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
 
+use constant CLASS	=> 'Test2::Tools::LoadModule';
+
 {
     # We jump through these hoops because we do not want to have the
     # test routines assume that the module under test can be loaded.
@@ -39,11 +41,21 @@ use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
     }
 }
 
-sub cant_locate {
-    my ( $module, $prefix ) = @_;
-    my $fn = pkg_to_file( $module );
-    $prefix ||= '';
-    return match qr<\A\Q$prefix\ECan't locate $fn in \@INC\b>sm;
+{
+    # Ditto
+
+    my $code = eval {
+	require Test2::Tools::LoadModule;
+	Test2::Tools::LoadModule->can( '__get_hint_hash' );
+    };
+
+    sub cant_locate {
+	my ( $module ) = @_;
+	my $fn = pkg_to_file( $module );
+	my $opt = $code->( 1 );
+	my $msg = sprintf $opt->{load_error}, "Can't locate $fn in \@INC";
+	return match qr/ \A \Q$msg\E \b /smx;
+    }
 }
 
 {
