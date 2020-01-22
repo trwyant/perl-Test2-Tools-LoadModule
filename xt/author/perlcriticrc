@@ -33,6 +33,8 @@ severity	= harsh
 
 severity	= gentle
 
+[-Perl::Critic::Policy::Subroutines::ProhibitSubroutinePrototypes]
+
 [Perl::Critic::Policy::Subroutines::RequireArgUnpacking]
 
 allow_delegation_to		= _validate_args

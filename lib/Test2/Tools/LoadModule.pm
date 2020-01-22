@@ -15,24 +15,36 @@ use base qw{ Exporter };
 
 our $VERSION = '0.000_010';
 
-our @EXPORT =	## no critic (ProhibitAutomaticExportation)
-qw{
-    load_module_ok
-    load_module_p_ok
-    load_module_or_skip
-    load_module_p_or_skip
-    load_module_or_skip_all
-    load_module_p_or_skip_all
-};
+{
+    my @test2 = qw{
+	load_module_ok
+	load_module_p_ok
+	load_module_or_skip
+	load_module_p_or_skip
+	load_module_or_skip_all
+	load_module_p_or_skip_all
+    };
 
-our @EXPORT_OK = ( @EXPORT, qw{
-    __build_load_eval
-} );
+    my @more = qw{
+	require_ok
+	use_ok
+    };
 
-our %EXPORT_TAGS = (
-    all		=> \@EXPORT,
-    private	=> [ grep { m/ \A _ /smx } @EXPORT_OK ],
-);
+    my @private = qw{
+	__build_load_eval
+    };
+
+    our @EXPORT_OK = ( @test2, @more, @private );
+
+    our @EXPORT = @test2;	## no critic (ProhibitAutomaticExportation)
+
+    our %EXPORT_TAGS = (
+	all		=> [ @test2, @more ],
+	test2	=> \@test2,
+	more	=> \@more,
+	private	=> \@private,
+    );
+}
 
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
@@ -51,7 +63,7 @@ use constant LAX_VERSION	=> qr/(?x: (?x:
 	(?-x:\.[0-9]+) (?-x:_[0-9]+)?
     ) )/;
 
-sub load_module_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_ok ($;$$$@) {
     my @args = _validate_args( @_ );
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( @args );
@@ -59,7 +71,7 @@ sub load_module_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
     return $rslt;
 }
 
-sub load_module_p_ok ($;$$$@) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_p_ok ($;$$$@) {
     my @args = _validate_args( @_ );
     $args[0]{perl_import_semantics} = 1;
     my $ctx = Test2::API::context();
@@ -86,13 +98,13 @@ sub _load_module_ok {
     chomp $@;
 
     $opt->{load_errors}
-	and push @diag, $@;
+	and push @diag, sprintf( $opt->{load_error_format} || '%s', $@ );
 
     return $ctx->fail_and_release( $name, @diag );
 }
 
 
-sub load_module_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,RequireFinalReturn)
+sub load_module_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
     my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
 
     _load_module( $opt, $module, $version, $import )
@@ -106,7 +118,7 @@ sub load_module_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,Re
 }
 
 
-sub load_module_p_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,RequireFinalReturn)
+sub load_module_p_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
     my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
     $opt->{perl_import_semantics} = 1;
 
@@ -120,7 +132,7 @@ sub load_module_p_or_skip ($;$$$$) {	## no critic (ProhibitSubroutinePrototypes,
     last SKIP;
 }
 
-sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_or_skip_all ($;$$$) {
     my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
 
     _load_module( $opt, $module, $version, $import )
@@ -133,7 +145,7 @@ sub load_module_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes
 }
 
 
-sub load_module_p_or_skip_all ($;$$$) {	## no critic (ProhibitSubroutinePrototypes)
+sub load_module_p_or_skip_all ($;$$$) {
     my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
     $opt->{perl_import_semantics} = 1;
 
@@ -221,6 +233,36 @@ sub unimport : method {	## no critic (ProhibitBuiltinHomonyms)
     return;	# There is no Exporter::unimport
 }
 
+sub require_ok ($) {
+    my ( $module ) = @_;
+    my $ctx = Test2::API::context();
+    my $rslt = _load_module_ok(
+	{
+	    load_errors	=> 1,
+	    load_error_format	=> 'Error:  %s',
+	},
+	$module, undef, undef, "require $module;",
+	"Tried to require '$module'.",
+    );
+    $ctx->release();
+    return $rslt;
+}
+
+sub use_ok ($;@) {
+    my ( $module, @arg ) = @_;
+    my $version = ( defined $arg[0] && $arg[0] =~ LAX_VERSION ) ?
+	shift @arg : undef;
+    my $ctx = Test2::API::context();
+    my $rslt = _load_module_ok(
+	{
+	    load_errors			=> 1,
+	    load_error_format		=> 'Error:  %s',
+	},
+	$module, $version, \@arg, undef, "Tried to use '$module'." );
+    $ctx->release();
+    return $rslt;
+}
+
 sub _make_pragma_key {
     return join '', __PACKAGE__, '/', $_;
 }
@@ -247,6 +289,7 @@ sub _make_pragma_key {
 
 sub __build_load_eval {
     my @arg = @_;
+    $DB::single = 1;
     HASH_REF eq ref $arg[0]
 	or unshift @arg, {};
     my ( $opt, $module, $version, $import ) = @arg;
@@ -263,7 +306,7 @@ sub __build_load_eval {
 	push @eval, '()';
     }
 
-    return "@eval";
+    return "@eval;";
 }
 
 
@@ -370,7 +413,11 @@ eliminated.
 
 =head1 SUBROUTINES
 
-The following subroutines are exported by default.
+All subroutines documented below are exportable. The C<load_module_*()>
+subroutines are exportable by default, or using the C<:test2> tag.
+Subroutines L<require_ok()|/require_ok> and L<use_ok()|/use_ok> are
+exportable using the C<:more> tag. All are exportable using the C<:all>
+tag.
 
 =head2 load_module_ok
 
@@ -442,9 +489,9 @@ using
 You can also change the default setting when you first load this module
 using
 
- use Test2::Tools::LoadModule qw{ --no-load-errors :all };
+ use Test2::Tools::LoadModule qw{ --no-load-errors :test2 };
 
-The C<:all> is necessary because if an option is specified the import
+The C<:test2> is necessary because if an option is specified the import
 routine assumes its only job is to change the value of the option.
 
 =head2 load_module_p_ok
@@ -513,6 +560,24 @@ L<load_module_or_skip_all()|/load_module_or_skip_all>, but Perl
 semantics are applied to the import list. That is, the value C<undef>
 means to import the default symbols, and C<[]> means not to call
 C<import()> at all.
+
+=head2 require_ok
+
+ require_ok $module;
+
+Prototype: C<($)>;
+
+This subroutine is more or less the same as the L<Test::More|Test::More>
+subroutine of the same name. It's actually a C<use()> that gets issued,
+but without a version check or importing anything.
+
+=head2 use_ok
+
+ use_ok $module, @imports;
+ use_ok $module, $version, @imports;
+
+This subroutine is more or less the same as the L<Test::More|Test::More>
+subroutine of the same name.
 
 =head1 SEE ALSO
 

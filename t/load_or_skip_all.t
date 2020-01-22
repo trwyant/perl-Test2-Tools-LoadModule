@@ -8,7 +8,7 @@ use warnings;
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
 BEGIN {
     # The above loaded our module but did not import
-    CLASS->import( qw{ :all :private } );
+    CLASS->import( qw{ :test2 :private } );
 }
 
 use lib qw{ inc };

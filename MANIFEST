@@ -20,6 +20,8 @@ t/lib/Present.pm
 t/load.t
 t/load_or_skip.t
 t/load_or_skip_all.t
+t/require.t
+t/use.t
 tools/README
 tools/events
 tools/version_regex
