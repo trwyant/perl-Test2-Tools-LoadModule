@@ -1,3 +1,8 @@
+0.000_012	2020-01-23	T. R. Wyant
+    Add options to load_module_*(). These are the same options as
+    available for import, and are provided because the hints mechanism
+    does not work before Perl 5.10.0.
+
 0.000_011	2020-01-22	T. R. Wyant
     Replace -load-errors with --load_error=...  where the value is a
     sprintf-style format (to be used verbatim), any other true value
