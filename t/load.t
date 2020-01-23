@@ -6,13 +6,16 @@ use strict;
 use warnings;
 
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
-BEGIN {
-    # The above loaded our module but did not import
-    CLASS->import( qw{ :test2 :private } );
-}
+# The above loaded our module but did not import
+use Test2::Tools::LoadModule qw{ :test2 :private };
 
 use lib qw{ inc };
-use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
+use My::Module::Test qw{
+    -inc
+    cant_locate
+    hints_or_skip
+    CHECK_MISSING_INFO
+};
 
 use constant SUB_NAME	=> "${CLASS}::load_module_ok";
 
@@ -167,7 +170,36 @@ my $line;
 {
     my $module = 'Bogus0';
 
-    use Test2::Tools::LoadModule -load_error => 0;
+    like
+	intercept {
+	    load_module_ok( -load_error => 0, $module ); $line = __LINE__;
+	},
+	array {
+
+	    event Fail => sub {
+		call name	=> __build_load_eval( $module );
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"Load unloadable module $module, error diagnostic suppressed by subroutine argument";
+}
+
+
+SKIP: {
+    hints_or_skip();
+
+    my $module = 'Bogus0';
+
+    my @import;
+    BEGIN { HINTS_AVAILABLE and @import = ( -load_error => 0 ); }
+    # TODO this does not work under Perl versions < 5.10.0.
+    use Test2::Tools::LoadModule @import;
 
     like
 	intercept {
@@ -186,7 +218,7 @@ my $line;
 
 	    end;
 	},
-	"Load unloadable module $module, with no load error diagnostic";
+	"Load unloadable module $module, error diagnostic suppressed by custom pragma";
 }
 
 

@@ -15,6 +15,7 @@ META.yml
 README
 t/basic.t
 t/build.t
+t/hint_hash.t
 t/lib/BogusVersion.pm
 t/lib/Present.pm
 t/load.t

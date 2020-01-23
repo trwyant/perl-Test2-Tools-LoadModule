@@ -6,17 +6,20 @@ use strict;
 use warnings;
 
 use Test2::V0 -target => 'Test2::Tools::LoadModule';
-BEGIN {
-    # The above loaded our module but did not import
-    CLASS->import( qw{ :more :private } );
-}
-
-use Test2::Tools::LoadModule -load_error => TEST_MORE_LOAD_ERROR;
+# The above loaded our module but did not import
+use Test2::Tools::LoadModule qw{ :more :private };
 
 use lib qw{ inc };
-use My::Module::Test qw{ -inc cant_locate CHECK_MISSING_INFO };
+use My::Module::Test qw{
+    -inc
+    cant_locate
+    CHECK_MISSING_INFO
+    $LOAD_ERROR_TEMPLATE
+};
 
 use constant SUB_NAME	=> "${CLASS}::require_ok";
+
+$LOAD_ERROR_TEMPLATE = TEST_MORE_LOAD_ERROR;
 
 my $line;
 

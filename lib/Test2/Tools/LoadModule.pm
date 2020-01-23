@@ -14,6 +14,7 @@ use Test2::Util ();
 use base qw{ Exporter };
 
 our $VERSION = '0.000_011';
+$VERSION =~ s/ _ //smxg;
 
 {
     my @test2 = qw{
@@ -33,6 +34,8 @@ our $VERSION = '0.000_011';
     my @private = qw{
 	__build_load_eval
 	__get_hint_hash
+	DEFAULT_LOAD_ERROR
+	HINTS_AVAILABLE
 	TEST_MORE_ERROR_CONTEXT
 	TEST_MORE_LOAD_ERROR
     };
@@ -53,6 +56,7 @@ our $VERSION = '0.000_011';
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
 
+use constant HINTS_AVAILABLE	=> $] ge '5.010';
 
 # The following cribbed shamelessly from version::regex 0.9924,
 # after being munged to suit by tools/version_regex 0.000_010.
@@ -235,8 +239,14 @@ sub _or_skip_all {
 sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
     ( my $class, local @ARGV ) = @_;	# See _parse_import_opts
     if ( @ARGV ) {
-	my $opt = _parse_import_opts();
-	$^H{ _make_pragma_key() } = $opt->{$_} for keys %{ $opt };
+	my %opt;
+	_parse_import_opts( \%opt );
+	if ( HINTS_AVAILABLE ) {
+	    $^H{ _make_pragma_key() } = $opt{$_} for keys %opt;
+	} else {
+	    keys %opt
+		and carp "Import options ignored under Perl $]";
+	}
 	@ARGV
 	    or return;
     }
@@ -272,8 +282,10 @@ sub _make_pragma_key {
 }
 
 {
+    use constant DEFAULT_LOAD_ERROR	=> '%s';
+
     my %default_hint = (
-	load_error	=> '%s',
+	load_error	=> DEFAULT_LOAD_ERROR,
     );
 
     sub __get_hint_hash {
@@ -281,10 +293,12 @@ sub _make_pragma_key {
 	$level ||= 0;
 	my $hint_hash = ( caller( $level ) )[ 10 ];
 	my %rslt = %default_hint;
-	foreach ( keys %{ $hint_hash } ) {
-	    my ( $hint_pkg, $hint_key ) = split qr< / >smx;
-	    __PACKAGE__ eq $hint_pkg
-		and $rslt{$hint_key} = $hint_hash->{$_};
+	if ( HINTS_AVAILABLE ) {
+	    foreach ( keys %{ $hint_hash } ) {
+		my ( $hint_pkg, $hint_key ) = split qr< / >smx;
+		__PACKAGE__ eq $hint_pkg
+		    and $rslt{$hint_key} = $hint_hash->{$_};
+	    }
 	}
 	return wantarray ? %rslt : \%rslt;
     }
@@ -314,7 +328,9 @@ sub __build_load_eval {
 
 
 sub _validate_args {
-    my ( $module, $version, $import, $name, @diag ) = @_;
+    local @ARGV = @_;
+    my $opt = _parse_import_opts( scalar __get_hint_hash( 2 ) );
+    my ( $module, $version, $import, $name, @diag ) = @ARGV;
 
     defined $module
 	or croak 'Module name must be defined';
@@ -327,8 +343,6 @@ sub _validate_args {
     not defined $import
 	or ARRAY_REF eq ref $import
 	or croak 'Import list must be an array reference, or undef';
-
-    my $opt = __get_hint_hash( 2 );
 
     return ( $opt, $module, $version, $import, $name, @diag );
 }
@@ -581,11 +595,11 @@ subroutine of the same name.
 
 =head2 LOAD ERROR FORMATTING
 
-By default, all subroutines that display diagnostics on failure include
-the value of C<$@> produced by the failure as the last (or only)
-diagnostic. You can control the presence and formatting of this by
-specifying the C<-load_error> option when you load this module, or at
-any subsequent point in the code.
+By default, the C<load_module_*()> subroutines append the value of C<$@>
+produced by the failure to the diagnostics. You can control the
+presence and formatting of this by specifying the C<-load_error> option
+as the first argumentZ<>(s) to the subroutine, or (under Perl
+5.10.0 and above) in a C<use Test2::Tools::LoadModule> statement.
 
 The value of this option is interpreted as follows:
 
@@ -608,16 +622,22 @@ specifies that C<$@> should not be appended to the diagnostics at all.
 =back
 
 For example, if you want your diagnostics to look like the
-L<Test::More|Test::More> C<require_ok()> diagnostic, you can do
+L<Test::More|Test::More> C<require_ok()> diagnostics, you can do
 something like this:
 
  {	# Begin scope
    use Test2::Tools::LoadModule -load_error => 'Error:  %s';
    load_module_ok $my_module, undef, undef,
-     "require $my_module", "Tried to require '$my_module'.";
+     "require $my_module;", "Tried to require '$my_module'.";
    ...
  }
  # -load_error reverts to whatever it was before.
+
+If you want your code to work under Perl 5.8, you can equivalently do
+
+ load_module_ok -load_error => 'Error:  %s',
+     $my_module, undef, undef, "require $my_module;"
+     "Tried to require '$my_module'.";
 
 B<Note> that the options parse uses POSIX conventions. That is, options
 must come before non-option arguments if any, and although (e.g.)

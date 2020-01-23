@@ -9,6 +9,7 @@ use Carp;
 use Exporter qw{ import };
 
 our $VERSION = '0.000_011';
+$VERSION =~ s/ _ //smxg;
 
 our @EXPORT = qw{ and_accounted_for };
 our @EXPORT_OK = ( @EXPORT, qw{ under_the_tree } );
