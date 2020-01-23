@@ -1,3 +1,14 @@
+0.000_011	2020-01-22	T. R. Wyant
+    Replace -load-errors with --load_error=...  where the value is a
+    sprintf-style format (to be used verbatim), any other true value
+    (which is equivalent to specifying '%s'), or any false value (to
+    suppress output of $@).
+
+    Add require_ok(), use_ok().
+
+    Go back to a regex to recognize version numbers, for the sake of
+    lightening dependencies.
+
 0.000_010	2020-01-20	T. R. Wyant
     Make the diagnostics argument an array, rather than an array
     reference. This is to be consistent with at least the majority of

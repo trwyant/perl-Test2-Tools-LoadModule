@@ -13,7 +13,7 @@ use Test2::Util ();
 
 use base qw{ Exporter };
 
-our $VERSION = '0.000_010';
+our $VERSION = '0.000_011';
 
 {
     my @test2 = qw{
