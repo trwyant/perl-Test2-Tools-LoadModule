@@ -21,10 +21,6 @@ use constant SUB_NAME	=> "${CLASS}::use_ok";
 
 $LOAD_ERROR_TEMPLATE = TEST_MORE_LOAD_ERROR;
 
-my $p = {
-    perl_import_semantics	=> 1,
-};
-
 my $line;
 
 {
@@ -35,7 +31,7 @@ my $line;
 	array {
 
 	    event Pass => sub {
-		call name	=> __build_load_eval( $p, CLASS );
+		call name	=> __build_load_eval( CLASS );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -45,7 +41,7 @@ my $line;
 
 	    end;
 	},
-	"use previously-loaded module $CLASS, no import";
+	"use previously-loaded module $CLASS, default import";
 }
 
 
@@ -59,7 +55,7 @@ my $line;
 	array {
 
 	    event Pass => sub {
-		call name	=> __build_load_eval( $p, $module );
+		call name	=> __build_load_eval( $module );
 		call info	=> CHECK_MISSING_INFO;
 		prop file	=> __FILE__;
 		prop package	=> __PACKAGE__;
@@ -111,7 +107,7 @@ my $line;
 	array {
 
 	    event Fail => sub {
-		call name	=> __build_load_eval( $p, $module );
+		call name	=> __build_load_eval( $module );
 		call info	=> array {
 		    item object {
 			call details	=> error_context( $module );
@@ -144,7 +140,7 @@ my $line;
 	array {
 
 	    event Fail => sub {
-		call name	=> __build_load_eval( $p, $module, $version );
+		call name	=> __build_load_eval( $module, $version );
 		call info	=> array {
 		    item object {
 			call details	=> error_context( $module );

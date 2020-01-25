@@ -91,7 +91,7 @@ my $line;
     my $module = 'Present';
     like
 	intercept {
-	    load_module_ok( $module, undef, [], "Load $module" ); $line = __LINE__;
+	    load_module_ok( $module, undef, undef, "Load $module" ); $line = __LINE__;
 	},
 	array {
 

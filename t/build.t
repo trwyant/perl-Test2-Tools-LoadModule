@@ -11,49 +11,49 @@ BEGIN {
     CLASS->import( ':private' );
 }
 
-use constant P => { perl_import_semantics => 1 };
+use constant R => { require => 1 };
 
 is __build_load_eval( 'Fubar' ),
-    'use Fubar ();',
-    'Module name only, load semantics';
+    'use Fubar;',
+    'Module name only, use() semantics';
 
 is __build_load_eval( Smart => 86 ),
-    'use Smart 86 ();',
-    'Module and version, load semantics';
+    'use Smart 86;',
+    'Module and version, use() semantics';
 
 is __build_load_eval( Nemo => undef, [] ),
-    'use Nemo;',
-    'Module and empty import list, load semantics';
+    'use Nemo ();',
+    'Module and empty import list, use() semantics';
 
 is __build_load_eval( Howard => undef, [ qw{ larry moe shemp } ] ),
     'use Howard qw{ larry moe shemp };',
-    'Module and explicit import list, load semantics';
+    'Module and explicit import list, use() semantics';
 
 is __build_load_eval( Dent => 42, [ qw{ Arthur } ] ),
     'use Dent 42 qw{ Arthur };',
-    'Module, version, and explicit export list, load semantics';
+    'Module, version, and explicit export list, use() semantics';
 
-is __build_load_eval( P, 'Fubar' ),
-    'use Fubar;',
-    'Module name only, Perl semantics';
+is __build_load_eval( R, 'Fubar' ),
+    'use Fubar ();',
+    'Module name only, require() semantics';
 
-is __build_load_eval( P, Smart => 86 ),
-    'use Smart 86;',
-    'Module and version, Perl semantics';
+is __build_load_eval( R, Smart => 86 ),
+    'use Smart 86 ();',
+    'Module and version, require() semantics';
 
-is __build_load_eval( P, Nemo => undef, [] ),
-    'use Nemo ();',
-    'Module and empty import list, Perl semantics';
+is __build_load_eval( R, Nemo => undef, [] ),
+    'use Nemo;',
+    'Module and empty import list, require() semantics';
 
-is __build_load_eval( P,
+is __build_load_eval( R,
 	Howard => undef, [ qw{ larry moe shemp } ] ),
     'use Howard qw{ larry moe shemp };',
-    'Module and explicit import list, Perl semantics';
+    'Module and explicit import list, require() semantics';
 
-is __build_load_eval( P,
+is __build_load_eval( R,
 	Dent => 42, [ qw{ Arthur } ] ),
     'use Dent 42 qw{ Arthur };',
-    'Module, version, and explicit export list, Perl semantics';
+    'Module, version, and explicit export list, require() semantics';
 
 done_testing;
 

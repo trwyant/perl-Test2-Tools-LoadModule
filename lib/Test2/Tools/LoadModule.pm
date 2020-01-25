@@ -19,11 +19,8 @@ $VERSION =~ s/ _ //smxg;
 {
     my @test2 = qw{
 	load_module_ok
-	load_module_p_ok
 	load_module_or_skip
-	load_module_p_or_skip
 	load_module_or_skip_all
-	load_module_p_or_skip_all
     };
 
     my @more = qw{
@@ -88,22 +85,18 @@ use constant TEST_MORE_ERROR_CONTEXT	=> q/Tried to %s '%s'./;
 use constant TEST_MORE_LOAD_ERROR	=> 'Error:  %s';
 use constant TEST_MORE_OPT		=> {
     load_error	=> TEST_MORE_LOAD_ERROR,
+    require	=> 1,
 };
 
 sub load_module_ok (@) {	## no critic (RequireArgUnpacking)
-    my @args = _validate_args( 0, @_ );
-    my $ctx = Test2::API::context();
-    my $rslt = _load_module_ok( @args );
-    $ctx->release();
-    return $rslt;
-}
+    my @arg = _validate_args( 0, @_ );
 
-sub load_module_p_ok (@) {	## no critic (RequireArgUnpacking)
-    my @args = _validate_args( 0, @_ );
-    $args[0]{perl_import_semantics} = 1;
     my $ctx = Test2::API::context();
-    my $rslt = _load_module_ok( @args );
+
+    my $rslt = _load_module_ok( @arg );
+
     $ctx->release();
+
     return $rslt;
 }
 
@@ -138,21 +131,7 @@ sub load_module_or_skip (@) {	## no critic (RequireArgUnpacking,RequireFinalRetu
 	and return;
 
     my $ctx = Test2::API::context();
-    _or_skip( $opt, $module, $version, $import, $name, $num );
-    $ctx->release();
-    no warnings qw{ exiting };
-    last SKIP;
-}
-
-
-sub load_module_p_or_skip (@) {	## no critic (RequireArgUnpacking,RequireFinalReturn)
-    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( 5, @_ );
-    $opt->{perl_import_semantics} = 1;
-
-    _load_module( $opt, $module, $version, $import )
-	and return;
-
-    my $ctx = Test2::API::context();
+    # TODO merge in _or_skip()
     _or_skip( $opt, $module, $version, $import, $name, $num );
     $ctx->release();
     no warnings qw{ exiting };
@@ -166,20 +145,7 @@ sub load_module_or_skip_all (@) {	## no critic (RequireArgUnpacking)
 	and return;
 
     my $ctx = Test2::API::context();
-    _or_skip_all( $opt, $module, $version, $import, $name );
-    $ctx->release();
-    return;
-}
-
-
-sub load_module_p_or_skip_all (@) {	## no critic (RequireArgUnpacking)
-    my ( $opt, $module, $version, $import, $name ) = _validate_args( 4, @_ );
-    $opt->{perl_import_semantics} = 1;
-
-    _load_module( $opt, $module, $version, $import )
-	and return;
-
-    my $ctx = Test2::API::context();
+    # TODO merge in _or_skip_all()
     _or_skip_all( $opt, $module, $version, $import, $name );
     $ctx->release();
     return;
@@ -240,6 +206,7 @@ sub _or_skip_all {
 	    local $SIG{__WARN__} = sub { $opt_err = $_[0] };
 	    $psr->getoptions( $opt, qw{
 		    load_error=s
+		    require|req!
 		},
 	    ) or do {
 		if ( defined $opt_err ) {
@@ -338,12 +305,15 @@ sub __build_load_eval {
     my ( $opt, $module, $version, $import ) = @arg;
     my @eval = "use $module";
 
+    exists $opt->{perl_import_semantics}
+	and confess 'Bug - $opt->{perl_import_semantics} retired';
+
     defined $version
 	and push @eval, $version;
 
     if ( $import && @{ $import } ) {
 	push @eval, "qw{ @{ $import } }";
-    } elsif ( $opt->{perl_import_semantics} xor defined $import ) {
+    } elsif ( defined $import xor not $opt->{require} ) {
 	# Do nothing.
     } else {
 	push @eval, '()';
@@ -501,9 +471,9 @@ If C<undef>, no version check is done.
 
 =item $import - the import list as an array ref, or undef
 
-This argument specifies the import list. C<undef> means not to import at
-all, C<[]> means to import the default symbols, and a scalar or a
-non-empty array reference mean to import the specified symbols.
+This argument specifies the import list. C<undef> means to import the
+default symbols, C<[]> means not to import anything, and a non-empty
+array reference mean to import the specified symbols.
 
 =item $name - the test name, or undef
 
@@ -535,16 +505,7 @@ need to put the call to this subroutine in a C<BEGIN { }> block:
 
 By default, C<$@> is appended to the diagnostics issued in the event of
 a load failure. If you want to omit this, or embed the value in your own
-text, see L<LOAD ERROR FORMATTING|/LOAD ERROR FORMATTING>, below.
-
-=head2 load_module_p_ok
-
- load_module_p_ok $module, $ver, $import, $name, @diag;
-
-This subroutine is the same as L<load_module_ok()|/load_module_ok>, but
-Perl semantics are applied to the import list. That is, the value
-C<undef> means to import the default symbols, and C<[]> means not to
-call C<import()> at all.
+text, see L<CONFIGURATION|/CONFIGURATION>, below.
 
 =head2 load_module_or_skip
 
@@ -563,15 +524,6 @@ tests to skip, defaulting to C<1>.
 The C<$name> argument gives the skip message, and defaults to
 C<"Unable to ..."> where the ellipsis is the code used to load the
 module.
-
-=head2 load_module_p_or_skip
-
- load_module_p_or_skip $module, $ver, $import, $name, $num;
-
-This subroutine is the same as
-L<load_module_or_skip()|/load_module_or_skip>, but Perl semantics are
-applied to the import list. That is, the value C<undef> means to import
-the default symbols, and C<[]> means not to call C<import()> at all.
 
 =head2 load_module_or_skip_all
 
@@ -593,16 +545,6 @@ module.
 This subroutine can be called either at the top level or in a subtest,
 but either way it B<must> be called before any actual tests in the file
 or subtest.
-
-=head2 load_module_p_or_skip_all
-
- load_module_p_or_skip_all $module, $ver, $import, $name;
-
-This subroutine is the same as
-L<load_module_or_skip_all()|/load_module_or_skip_all>, but Perl
-semantics are applied to the import list. That is, the value C<undef>
-means to import the default symbols, and C<[]> means not to call
-C<import()> at all.
 
 =head2 require_ok
 
@@ -627,15 +569,40 @@ subroutine of the same name. The arguments are the name of the module to
 load, and optional version (recognized by the equivalent of
 C<version::is_lax()>, and optional imports.
 
-=head2 LOAD ERROR FORMATTING
+=head1 CONFIGURATION
 
-By default, the C<load_module_*()> subroutines append the value of C<$@>
-produced by the failure to the diagnostics. You can control the
-presence and formatting of this by specifying the C<-load_error> option
-as the first argumentZ<>(s) to the subroutine, or (under Perl
-5.10.0 and above) in a C<use Test2::Tools::LoadModule> statement.
+The action of the C<load_module_*()> subroutines is configurable using
+POSIX-style options. If used as subroutine arguments they apply only to
+that subroutine call. If used as arguments to C<use()>, they apply to
+everything in the scope of the C<use()>, though this requires Perl 5.10
+or above, and you must specify any desired imports.
 
-The value of this option is interpreted as follows:
+These options are all documented double-dashed. A single leading dash is
+tolerated except in the form C<--option=argument>, where the double dash
+is required.
+
+The following configuration options are available.
+
+=head2 --require
+
+If asserted, this possibly-badly-named Boolean option specifies that an
+C<undef> or unspecified import list imports nothing, while C<[]> does
+the default import.
+
+The default is C<-norequire>, which is the other way around. This is the
+way C<use()> works, which is what inspired the name of the option.
+
+=head2 --req
+
+This is just a shorter synonym for L<--require|/--require>.
+
+=head2 --load_error
+
+ --load_error
+
+This option specifies the formatting of the load error for those
+subroutines that append it to the diagnostics. The value is interpreted
+as follows:
 
 =over
 
@@ -657,7 +624,7 @@ specifies that C<$@> should not be appended to the diagnostics at all.
 
 For example, if you want your diagnostics to look like the
 L<Test::More|Test::More> C<require_ok()> diagnostics, you can do
-something like this:
+something like this (at least under Perl 5.10 or above):
 
  {	# Begin scope
    use Test2::Tools::LoadModule -load_error => 'Error:  %s';
@@ -673,11 +640,7 @@ If you want your code to work under Perl 5.8, you can equivalently do
      $my_module, undef, undef, "require $my_module;"
      "Tried to require '$my_module'.";
 
-B<Note> that the options parse uses POSIX conventions. That is, options
-must come before non-option arguments if any, and although (e.g.)
-C<'--load_error=1'> will parse, C<'-load_error=1'> will not.
-
-B<Note also> that, while you can specify options on your initial load,
+B<Note> that, while you can specify options on your initial load,
 if you do so you must specify your desired imports explicitly, as (e.g.)
 
  use Test2::Tools::LoadModule

@@ -20,19 +20,18 @@ use My::Module::Test qw{
 };
 
 use constant SUB_NAME	=> "${CLASS}::load_module_or_skip_all";
-use constant SUB_NAME_P	=> "${CLASS}::load_module_p_or_skip_all";
 
 my $line;
 
 {
     like
 	intercept {
-	    load_module_or_skip_all $CLASS;
+	    load_module_or_skip_all -req => CLASS;
 	},
 	array {
 	    end;
 	},
-	"use $CLASS (already loaded)";
+	"use $CLASS (already loaded, require() semantics)";
 }
 
 
@@ -43,12 +42,12 @@ my $line;
 
     like
 	intercept {
-	    load_module_p_or_skip_all $module;
+	    load_module_or_skip_all $module;
 	},
 	array {
 	    end;
 	},
-	"use $module (not previously loaded, Perl semantics)";
+	"use $module (not previously loaded, use() semantics)";
 
     imported_ok 'and_accounted_for';
 }
@@ -77,7 +76,7 @@ my $line;
 
 	    end;
 	},
-	"use $module (not loadable) skips";
+	"use $module (not loadable, use() semantics) skips";
 }
 
 
@@ -105,7 +104,7 @@ my $line;
 
 	    end;
 	},
-	"use $module $version (version error) skips";
+	"use $module $version (version error, use() semantics) skips";
 }
 
 
@@ -133,7 +132,7 @@ my $line;
 
 	    end;
 	},
-	"use $module qw{ @import } (import error) skips";
+	"use $module qw{ @import } (import error, use() semantics) skips";
 }
 
 

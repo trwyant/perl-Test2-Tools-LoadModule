@@ -156,9 +156,9 @@ This option specifies the name argument.
  -skip 17
 
 This option specifies the number of skipped tests for
-C<load_module_or_skip()> and C<load_module_p_or_skip()>. This is
-actually a synonym for L<-diagnostic|/-diagnostic>, since the two
-arguments are handled the same way.
+C<load_module_or_skip()>. This is actually a synonym for
+L<-diagnostic|/-diagnostic>, since the two arguments are handled the
+same way.
 
 =head2 -version
 
@@ -190,9 +190,8 @@ L<-name|/-name> and L<-diagnostic|/-diagnostic> options in that order.
 
 =item The subroutine to execute
 
-This must be C<load_module_ok>, C<load_module_p_ok>,
-C<load_module_or_skip>, C<load_module_p_or_skip>,
-C<load_module_or_skip_all>, or C<load_module_p_or_skip_all>.
+This must be C<load_module_ok>, C<load_module_or_skip>,
+C<load_module_or_skip_all>, C<require_ok>, or C<use_ok>.
 
 =item The name of the module to load
 

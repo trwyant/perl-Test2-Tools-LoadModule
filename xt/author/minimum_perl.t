@@ -1,19 +1,17 @@
 package main;
 
-use 5.006;
-
 use strict;
 use warnings;
 
 use Test2::V0;
 use Test2::Tools::LoadModule;
 
-load_module_p_or_skip_all 'ExtUtils::Manifest', undef, [
+load_module_or_skip_all 'ExtUtils::Manifest', undef, [
     qw{ maniread } ];
 
-load_module_p_or_skip_all 'Perl::MinimumVersion';
+load_module_or_skip_all 'Perl::MinimumVersion';
 
-load_module_p_or_skip_all 'version';
+load_module_or_skip_all 'version';
 
 use lib qw{ inc };
 use My::Module::Meta;
@@ -36,7 +34,7 @@ foreach my $fn ( sort keys %{ $manifest } ) {
 	@{ $ppi_doc->find( 'PPI::Statement::Include' ) || [] } ) {
 	my $vers = $inc->version()
 	    or next;
-	cmp_ok( version->parse( $vers ), '==', $min_perl_vers,
+	ok( version->parse( $vers ) == $min_perl_vers,
 	    "$fn has use $min_perl, rather than some other version" );
 	last;
     }

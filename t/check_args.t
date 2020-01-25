@@ -12,11 +12,8 @@ my $line;
 
 foreach my $sub ( qw{
     load_module_ok
-    load_module_p_ok
     load_module_or_skip
-    load_module_p_or_skip
     load_module_or_skip_all
-    load_module_p_or_skip_all
     require_ok
     use_ok
     } ) {
@@ -35,11 +32,8 @@ foreach my $sub ( qw{
 
     foreach my $sub ( qw{
 	load_module_ok
-	load_module_p_ok
 	load_module_or_skip
-	load_module_p_or_skip
 	load_module_or_skip_all
-	load_module_p_or_skip_all
 	} ) {
 
 	my $code = __PACKAGE__->can( $sub );
@@ -64,7 +58,6 @@ foreach my $sub ( qw{
 
 foreach my $sub ( qw{
     load_module_or_skip
-    load_module_p_or_skip
     } ) {
 
     my $code = __PACKAGE__->can( $sub );
@@ -85,7 +78,6 @@ foreach my $sub ( qw{
 
 foreach my $sub ( qw{
     load_module_or_skip_all
-    load_module_p_or_skip_all
     } ) {
 
     my $code = __PACKAGE__->can( $sub );
