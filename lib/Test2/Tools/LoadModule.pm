@@ -35,6 +35,11 @@ $VERSION =~ s/ _ //smxg;
 	__build_load_eval
 	__get_hint_hash
 	DEFAULT_LOAD_ERROR
+	ERR_IMPORT_BAD
+	ERR_MODULE_UNDEF
+	ERR_OPTION_BAD
+	ERR_SKIP_NUM_BAD
+	ERR_VERSION_BAD
 	HINTS_AVAILABLE
 	TEST_MORE_ERROR_CONTEXT
 	TEST_MORE_LOAD_ERROR
@@ -55,6 +60,14 @@ $VERSION =~ s/ _ //smxg;
 
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
+
+use constant DEFAULT_LOAD_ERROR	=> '%s';
+
+use constant ERR_IMPORT_BAD	=> 'Import list must be an array reference, or undef';
+use constant ERR_MODULE_UNDEF	=> 'Module name must be defined';
+use constant ERR_OPTION_BAD	=> 'Bad option';
+use constant ERR_SKIP_NUM_BAD	=> 'Number of skipped tests must be an unsigned integer';
+use constant ERR_VERSION_BAD	=> q/Version '%s' is invalid/;
 
 use constant HINTS_AVAILABLE	=> $] ge '5.010';
 
@@ -77,16 +90,16 @@ use constant TEST_MORE_OPT		=> {
     load_error	=> TEST_MORE_LOAD_ERROR,
 };
 
-sub load_module_ok (@) {
-    my @args = _validate_args( @_ );
+sub load_module_ok (@) {	## no critic (RequireArgUnpacking)
+    my @args = _validate_args( 0, @_ );
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( @args );
     $ctx->release();
     return $rslt;
 }
 
-sub load_module_p_ok (@) {
-    my @args = _validate_args( @_ );
+sub load_module_p_ok (@) {	## no critic (RequireArgUnpacking)
+    my @args = _validate_args( 0, @_ );
     $args[0]{perl_import_semantics} = 1;
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( @args );
@@ -118,8 +131,8 @@ sub _load_module_ok {
 }
 
 
-sub load_module_or_skip (@) {	## no critic (RequireFinalReturn)
-    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
+sub load_module_or_skip (@) {	## no critic (RequireArgUnpacking,RequireFinalReturn)
+    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( 5, @_ );
 
     _load_module( $opt, $module, $version, $import )
 	and return;
@@ -132,8 +145,8 @@ sub load_module_or_skip (@) {	## no critic (RequireFinalReturn)
 }
 
 
-sub load_module_p_or_skip (@) {	## no critic (RequireFinalReturn)
-    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
+sub load_module_p_or_skip (@) {	## no critic (RequireArgUnpacking,RequireFinalReturn)
+    my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( 5, @_ );
     $opt->{perl_import_semantics} = 1;
 
     _load_module( $opt, $module, $version, $import )
@@ -146,8 +159,8 @@ sub load_module_p_or_skip (@) {	## no critic (RequireFinalReturn)
     last SKIP;
 }
 
-sub load_module_or_skip_all (@) {
-    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
+sub load_module_or_skip_all (@) {	## no critic (RequireArgUnpacking)
+    my ( $opt, $module, $version, $import, $name ) = _validate_args( 4, @_ );
 
     _load_module( $opt, $module, $version, $import )
 	and return;
@@ -159,8 +172,8 @@ sub load_module_or_skip_all (@) {
 }
 
 
-sub load_module_p_or_skip_all (@) {
-    my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
+sub load_module_p_or_skip_all (@) {	## no critic (RequireArgUnpacking)
+    my ( $opt, $module, $version, $import, $name ) = _validate_args( 4, @_ );
     $opt->{perl_import_semantics} = 1;
 
     _load_module( $opt, $module, $version, $import )
@@ -190,7 +203,7 @@ sub _or_skip {
 	    __build_load_eval( $opt, $module, $version, $import );
     defined $num
 	and $num =~ m/ [^0-9] /smx
-	and croak 'Number of skipped tests must be an unsigned integer';
+	and croak ERR_SKIP_NUM_BAD;
     $num ||= 1;
     my $ctx = Test2::API::context();
     $ctx->skip( 'skipped test', $name ) for 1 .. $num;
@@ -222,11 +235,21 @@ sub _or_skip_all {
     sub _parse_import_opts {
 	my ( $opt ) = @_;
 	$opt ||= {};
-	$psr->getoptions( $opt, qw{
-		load_error=s
-	    },
-	)
-	    or croak "Invalid import option";
+	{
+	    my $opt_err;
+	    local $SIG{__WARN__} = sub { $opt_err = $_[0] };
+	    $psr->getoptions( $opt, qw{
+		    load_error=s
+		},
+	    ) or do {
+		if ( defined $opt_err ) {
+		    chomp $opt_err;
+		    croak $opt_err;
+		} else {
+		    croak ERR_OPTION_BAD;
+		}
+	    };
+	}
 	if ( $opt->{load_error} ) {
 	    $opt->{load_error} =~ m/ ( %+ ) [ #0+-]* [0-9]* s /smx
 		and length( $1 ) % 2
@@ -255,6 +278,8 @@ sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
 
 sub require_ok ($) {
     my ( $module ) = @_;
+    defined $module
+	or croak ERR_MODULE_UNDEF;
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( TEST_MORE_OPT,
 	$module, undef, undef, "require $module;",
@@ -266,6 +291,8 @@ sub require_ok ($) {
 
 sub use_ok ($;@) {
     my ( $module, @arg ) = @_;
+    defined $module
+	or croak ERR_MODULE_UNDEF;
     my $version = ( defined $arg[0] && $arg[0] =~ LAX_VERSION ) ?
 	shift @arg : undef;
     my $ctx = Test2::API::context();
@@ -282,7 +309,6 @@ sub _make_pragma_key {
 }
 
 {
-    use constant DEFAULT_LOAD_ERROR	=> '%s';
 
     my %default_hint = (
 	load_error	=> DEFAULT_LOAD_ERROR,
@@ -328,25 +354,30 @@ sub __build_load_eval {
 
 
 sub _validate_args {
-    local @ARGV = @_;
+    ( my $max_arg, local @ARGV ) = @_;
     my $opt = _parse_import_opts( scalar __get_hint_hash( 2 ) );
+
+    if ( $max_arg && @ARGV > $max_arg ) {
+	( my $sub_name = ( caller 1 )[3] ) =~ s/ .* :: //smx;
+	croak sprintf '%s() takes at most %d arguments', $sub_name, $max_arg;
+    }
+
     my ( $module, $version, $import, $name, @diag ) = @ARGV;
 
     defined $module
-	or croak 'Module name must be defined';
+	or croak ERR_MODULE_UNDEF;
 
     if ( defined $version ) {
 	$version =~ LAX_VERSION
-	    or croak "Version '$version' is invalid";
+	    or croak sprintf ERR_VERSION_BAD, $version;
     }
 
     not defined $import
 	or ARRAY_REF eq ref $import
-	or croak 'Import list must be an array reference, or undef';
+	or croak ERR_IMPORT_BAD;
 
     return ( $opt, $module, $version, $import, $name, @diag );
 }
-
 
 sub _eval_in_pkg {
     my ( $eval, $pkg, $file, $line ) = @_;
@@ -449,7 +480,7 @@ one of the following tags:
 
  load_module_ok $module, $ver, $import, $name, @diag;
 
-Prototype: C<($;$$$@)>.
+Prototype: C<(@)>.
 
 This subroutine tests whether the specified module (B<not> file) can be
 loaded. All arguments are optional but the first. The arguments are:
@@ -519,7 +550,7 @@ call C<import()> at all.
 
  load_module_or_skip $module, $ver, $import, $name, $num;
 
-Prototype: C<($;$$$$)>.
+Prototype: C<(@)>.
 
 This subroutine performs the same loading actions as
 L<load_module_ok()|/load_module_ok>, but no tests are performed.
@@ -546,7 +577,7 @@ the default symbols, and C<[]> means not to call C<import()> at all.
 
  load_module_or_skip_all $module, $ver, $import, $name;
 
-Prototype: C<($;$$$)>.
+Prototype: C<(@)>.
 
 This subroutine performs the same loading actions as
 L<load_module_ok()|/load_module_ok>, but no tests are performed.
@@ -580,8 +611,9 @@ C<import()> at all.
 Prototype: C<($)>.
 
 This subroutine is more or less the same as the L<Test::More|Test::More>
-subroutine of the same name. It's actually a C<use()> that gets issued,
-but without a version check or importing anything.
+subroutine of the same name. The argument is the name of the module to
+load. It's actually a C<use()> that gets issued, but without a version
+check or importing anything.
 
 =head2 use_ok
 
@@ -591,7 +623,9 @@ but without a version check or importing anything.
 Prototype: C<($;@)>.
 
 This subroutine is more or less the same as the L<Test::More|Test::More>
-subroutine of the same name.
+subroutine of the same name. The arguments are the name of the module to
+load, and optional version (recognized by the equivalent of
+C<version::is_lax()>, and optional imports.
 
 =head2 LOAD ERROR FORMATTING
 
