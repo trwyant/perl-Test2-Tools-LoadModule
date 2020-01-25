@@ -77,7 +77,7 @@ use constant TEST_MORE_OPT		=> {
     load_error	=> TEST_MORE_LOAD_ERROR,
 };
 
-sub load_module_ok ($;$$$@) {
+sub load_module_ok (@) {
     my @args = _validate_args( @_ );
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( @args );
@@ -85,7 +85,7 @@ sub load_module_ok ($;$$$@) {
     return $rslt;
 }
 
-sub load_module_p_ok ($;$$$@) {
+sub load_module_p_ok (@) {
     my @args = _validate_args( @_ );
     $args[0]{perl_import_semantics} = 1;
     my $ctx = Test2::API::context();
@@ -118,7 +118,7 @@ sub _load_module_ok {
 }
 
 
-sub load_module_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
+sub load_module_or_skip (@) {	## no critic (RequireFinalReturn)
     my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
 
     _load_module( $opt, $module, $version, $import )
@@ -132,7 +132,7 @@ sub load_module_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
 }
 
 
-sub load_module_p_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
+sub load_module_p_or_skip (@) {	## no critic (RequireFinalReturn)
     my ( $opt, $module, $version, $import, $name, $num ) = _validate_args( @_ );
     $opt->{perl_import_semantics} = 1;
 
@@ -146,7 +146,7 @@ sub load_module_p_or_skip ($;$$$$) {	## no critic (RequireFinalReturn)
     last SKIP;
 }
 
-sub load_module_or_skip_all ($;$$$) {
+sub load_module_or_skip_all (@) {
     my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
 
     _load_module( $opt, $module, $version, $import )
@@ -159,7 +159,7 @@ sub load_module_or_skip_all ($;$$$) {
 }
 
 
-sub load_module_p_or_skip_all ($;$$$) {
+sub load_module_p_or_skip_all (@) {
     my ( $opt, $module, $version, $import, $name ) = _validate_args( @_ );
     $opt->{perl_import_semantics} = 1;
 
