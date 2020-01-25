@@ -1,3 +1,16 @@
+0.000_013	2020-01-25	T. R. Wyant
+    Add --require, eliminate load_module_p_*(). It's --require rather
+    than --use, because what has actually happened is that the remaining
+    load_module_*() subroutines use what I'm now calling use()
+    semantics, which is what the load_module_p_*() modules did.
+
+    Validate number of load_module_*() arguments and test exceptions
+    generally.
+
+    Make the load_module_*() prototypes all (@) because the possibility
+    of passing options means I do not know how many arguments there will
+    be.
+
 0.000_012	2020-01-23	T. R. Wyant
     Add options to load_module_*(). These are the same options as
     available for import, and are provided because the hints mechanism
