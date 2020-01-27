@@ -59,7 +59,7 @@ sub hints_or_skip {
     CLASS-> HINTS_AVAILABLE()
 	and return;
     $num ||= 1;
-    skip "Hints not available in Perl $]";
+    skip "Hints not available in Perl $]", $num;
 }
 
 {
