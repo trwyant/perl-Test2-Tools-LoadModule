@@ -13,7 +13,6 @@ use lib qw{ inc };
 use My::Module::Test qw{
     -inc
     cant_locate
-    hints_or_skip
     CHECK_MISSING_INFO
 };
 
@@ -192,13 +191,17 @@ my $line;
 
 
 SKIP: {
-    hints_or_skip();
+    HINTS_AVAILABLE
+	or skip "Hints not available in perl $]";
 
     my $module = 'Bogus0';
 
+    # This strange code is because we want the import list to be empty
+    # if hints are not available, but they need to be executed at
+    # compile time if they are. The 'skip' does not help us here because
+    # the use() is done unconditionally.
     my @import;
     BEGIN { HINTS_AVAILABLE and @import = ( -load_error => 0 ); }
-    # TODO this does not work under Perl versions < 5.10.0.
     use Test2::Tools::LoadModule @import;
 
     like

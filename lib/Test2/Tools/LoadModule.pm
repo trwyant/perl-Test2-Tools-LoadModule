@@ -58,6 +58,8 @@ $VERSION =~ s/ _ //smxg;
 use constant ARRAY_REF		=> ref [];
 use constant HASH_REF		=> ref {};
 
+use constant CALLER_HINT_HASH	=> 10;
+
 use constant DEFAULT_LOAD_ERROR	=> '%s';
 
 use constant ERR_IMPORT_BAD	=> 'Import list must be an array reference, or undef';
@@ -130,9 +132,17 @@ sub load_module_or_skip (@) {	## no critic (RequireArgUnpacking,RequireFinalRetu
     _load_module( $opt, $module, $version, $import )
 	and return;
 
+    defined $name
+	or $name = sprintf 'Unable to %s',
+	    __build_load_eval( $opt, $module, $version, $import );
+    defined $num
+	and $num =~ m/ [^0-9] /smx
+	and croak ERR_SKIP_NUM_BAD;
+
     my $ctx = Test2::API::context();
-    # TODO merge in _or_skip()
-    _or_skip( $opt, $module, $version, $import, $name, $num );
+    $num ||= 1;
+    $ctx->skip( 'skipped test', $name ) for 1 .. $num;
+
     $ctx->release();
     no warnings qw{ exiting };
     last SKIP;
@@ -144,10 +154,14 @@ sub load_module_or_skip_all (@) {	## no critic (RequireArgUnpacking)
     _load_module( $opt, $module, $version, $import )
 	and return;
 
+    defined $name
+	or $name = sprintf 'Unable to %s',
+	    __build_load_eval( $opt, $module, $version, $import );
+
     my $ctx = Test2::API::context();
-    # TODO merge in _or_skip_all()
-    _or_skip_all( $opt, $module, $version, $import, $name );
+    $ctx->plan( 0, SKIP => $name );
     $ctx->release();
+
     return;
 }
 
@@ -162,32 +176,6 @@ sub _load_module {
     return _eval_in_pkg( $eval, _get_call_info() )
 }
 
-sub _or_skip {
-    my ( $opt, $module, $version, $import, $name, $num ) = @_;
-    defined $name
-	or $name = sprintf 'Unable to %s',
-	    __build_load_eval( $opt, $module, $version, $import );
-    defined $num
-	and $num =~ m/ [^0-9] /smx
-	and croak ERR_SKIP_NUM_BAD;
-    $num ||= 1;
-    my $ctx = Test2::API::context();
-    $ctx->skip( 'skipped test', $name ) for 1 .. $num;
-    $ctx->release();
-    return;
-}
-
-sub _or_skip_all {
-    my ( $opt, $module, $version, $import, $name ) = @_;
-    defined $name
-	or $name = sprintf 'Unable to %s',
-	    __build_load_eval( $opt, $module, $version, $import );
-    my $ctx = Test2::API::context();
-    $ctx->plan( 0, SKIP => $name );
-    $ctx->release();
-    return;
-}
-
 {
     my $psr = Getopt::Long::Parser->new();
     $psr->configure( qw{ posix_default } );
@@ -198,7 +186,7 @@ sub _or_skip_all {
     # argument is a reference to a hash into which we place the option
     # values. If omitted, we create a reference to a new hash. Either
     # way the hash reference gets returned.
-    sub _parse_import_opts {
+    sub _parse_opts {
 	my ( $opt ) = @_;
 	$opt ||= {};
 	{
@@ -227,10 +215,10 @@ sub _or_skip_all {
 }
 
 sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
-    ( my $class, local @ARGV ) = @_;	# See _parse_import_opts
+    ( my $class, local @ARGV ) = @_;	# See _parse_opts
     if ( @ARGV ) {
 	my %opt;
-	_parse_import_opts( \%opt );
+	_parse_opts( \%opt );
 	if ( HINTS_AVAILABLE ) {
 	    $^H{ _make_pragma_key() } = $opt{$_} for keys %opt;
 	} else {
@@ -284,7 +272,7 @@ sub _make_pragma_key {
     sub __get_hint_hash {
 	my ( $level ) = @_;
 	$level ||= 0;
-	my $hint_hash = ( caller( $level ) )[ 10 ];
+	my $hint_hash = ( caller( $level ) )[ CALLER_HINT_HASH ];
 	my %rslt = %default_hint;
 	if ( HINTS_AVAILABLE ) {
 	    foreach ( keys %{ $hint_hash } ) {
@@ -293,7 +281,7 @@ sub _make_pragma_key {
 		    and $rslt{$hint_key} = $hint_hash->{$_};
 	    }
 	}
-	return wantarray ? %rslt : \%rslt;
+	return \%rslt;
     }
 }
 
@@ -325,7 +313,7 @@ sub __build_load_eval {
 
 sub _validate_args {
     ( my $max_arg, local @ARGV ) = @_;
-    my $opt = _parse_import_opts( scalar __get_hint_hash( 2 ) );
+    my $opt = _parse_opts( __get_hint_hash( 2 ) );
 
     if ( $max_arg && @ARGV > $max_arg ) {
 	( my $sub_name = ( caller 1 )[3] ) =~ s/ .* :: //smx;
@@ -577,9 +565,10 @@ that subroutine call. If used as arguments to C<use()>, they apply to
 everything in the scope of the C<use()>, though this requires Perl 5.10
 or above, and you must specify any desired imports.
 
-These options are all documented double-dashed. A single leading dash is
-tolerated except in the form C<--option=argument>, where the double dash
-is required.
+These options are parsed by L<Getopt::Long|Getopt::Long> (q.v.) in POSIX
+mode, so they must appear before non-option arguments. They are all
+documented double-dashed. A single leading dash is tolerated except in
+the form C<--option=argument>, where the double dash is required.
 
 The following configuration options are available.
 
@@ -598,7 +587,7 @@ This is just a shorter synonym for L<--require|/--require>.
 
 =head2 --load_error
 
- --load_error
+ --load_error 'Error: %s'
 
 This option specifies the formatting of the load error for those
 subroutines that append it to the diagnostics. The value is interpreted
