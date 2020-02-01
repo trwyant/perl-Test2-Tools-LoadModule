@@ -389,7 +389,7 @@ Test2::Tools::LoadModule - Test whether a module can be successfully loaded.
 =head1 DESCRIPTION
 
 This L<Test2::Tools|Test2::Tools> module tests whether a module can be
-loaded, and optionally whether it has at least a given version and
+loaded, and optionally whether it has at least a given version, and
 exports specified symbols. It can also skip tests, or skip all tests,
 based on these criteria.
 
@@ -452,8 +452,7 @@ This is required, and must not be C<undef>.
 =item $ver - the desired version number, or undef
 
 If defined, the test fails if the installed module is not at least this
-version. An exception is thrown if L<version|version> thinks the version
-number is invalid.
+version. An exception is thrown if the version number is invalid.
 
 If C<undef>, no version check is done.
 
