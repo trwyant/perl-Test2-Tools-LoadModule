@@ -66,7 +66,7 @@ sub cant_locate {
 			if ( CLASS eq $pkg ) {
 			    my $fh;
 			    open $fh, '<', "t/lib/$_[1]"
-				and return $] ge '5.018' ? ( \'', $fh ) : $fh;
+				and return $] ge '5.020' ? ( \'', $fh ) : $fh;
 			    croak "Can't locate $_[1] in \@INC";
 			}
 			$pkg =~ m/ \A Test2:: /smx
