@@ -13,7 +13,7 @@ use Test2::Util ();
 
 use base qw{ Exporter };
 
-our $VERSION = '0.000_901';
+our $VERSION = '0.000_902';
 $VERSION =~ s/ _ //smxg;
 
 {

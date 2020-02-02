@@ -1,2 +1,5 @@
+0.000_902	2020-02-02	T. R. Wyant
+    Fix test failures under Perl 5.18 (I hope!)
+
 0.000_901	2020-02-01	T. R. Wyant
     Initial release to CPAN.

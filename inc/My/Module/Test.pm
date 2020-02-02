@@ -10,7 +10,7 @@ use Exporter ();
 use Test2::V0;
 use Test2::Util qw{ pkg_to_file };
 
-our $VERSION = '0.000_901';
+our $VERSION = '0.000_902';
 
 our @EXPORT_OK = qw{
     -inc
