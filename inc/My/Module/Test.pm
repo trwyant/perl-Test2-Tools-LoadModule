@@ -51,53 +51,51 @@ sub cant_locate {
     return match qr/ \A \Q$msg\E \b /smx;
 }
 
-{
-    # The @INC stuff is deeper magic than I like, but it lets me get rid
-    # of Test::Without::Module as a testing dependency. The idea is that
-    # Test2::Tools::LoadModule only sees t/lib/, but everyone else
-    # can still load whatever they want. Modules already loaded at this
-    # point will still appear to be loaded, no matter who requests them.
-    my %special = (
-	'-inc'	=> sub {
-	    unshift @INC,
-		sub {
-		    my $lvl = 0;
-		    while ( my $pkg = caller $lvl ) {
-			if ( CLASS eq $pkg ) {
-			    my $fh;
-			    open $fh, '<', "t/lib/$_[1]"
-				and return $] ge '5.020' ? ( \'', $fh ) : $fh;
-			    croak "Can't locate $_[1] in \@INC";
-			}
-			$pkg =~ m/ \A Test2:: /smx
-			    and return;
-		    } continue {
-			$lvl++;
+# The @INC stuff is deeper magic than I like, but it lets me get rid
+# of Test::Without::Module as a testing dependency. The idea is that
+# Test2::Tools::LoadModule only sees t/lib/, but everyone else
+# can still load whatever they want. Modules already loaded at this
+# point will still appear to be loaded, no matter who requests them.
+
+sub import {
+    my ( $class, @arg ) = @_;
+
+    @arg
+	or goto &Exporter::import;
+
+    my $caller = caller;
+
+    my @rslt;
+
+    foreach ( @arg ) {
+	if ( '-inc' eq $_ ) {
+	    unshift @INC, sub {
+		my $lvl = 0;
+		while ( my $pkg = caller $lvl ) {
+		    if ( CLASS eq $pkg ) {
+			my $fh;
+			open $fh, '<', "t/lib/$_[1]"
+			    and return $] ge '5.020' ? ( \'', $fh ) : $fh;
+			croak "Can't locate $_[1] in \@INC";
 		    }
-		    return;
-		};
-	},
-    );
-
-    sub import {
-	my ( $class, @arg ) = @_;
-
-	@arg
-	    or goto &Exporter::import;
-
-	my @rslt;
-
-	foreach ( @arg ) {
-	    if ( my $code = $special{$_} ) {
-		$code->();
-	    } else {
-		push @rslt, $_;
-	    }
+		    # We iterate if in the original caller, because it
+		    # is possible the load is being done on behalf of
+		    # the original caller by the module under test,
+		    # using a stringy eval.
+		    $caller eq $pkg
+			or return;
+		} continue {
+		    $lvl++;
+		}
+		return;
+	    };
+	} else {
+	    push @rslt, $_;
 	}
-
-	@_ = ( $class, @rslt );
-	goto &Exporter::import;
     }
+
+    @_ = ( $class, @rslt );
+    goto &Exporter::import;
 }
 
 1;
