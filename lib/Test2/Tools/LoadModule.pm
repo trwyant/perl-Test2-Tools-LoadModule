@@ -293,9 +293,6 @@ sub __build_load_eval {
     my ( $opt, $module, $version, $import ) = @arg;
     my @eval = "use $module";
 
-    exists $opt->{perl_import_semantics}
-	and confess 'Bug - $opt->{perl_import_semantics} retired';
-
     defined $version
 	and push @eval, $version;
 
