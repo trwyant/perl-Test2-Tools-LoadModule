@@ -10,8 +10,8 @@ use Test2::V0 -target => 'Test2::Tools::LoadModule';
 use Test2::Tools::LoadModule qw{ :more :private };
 
 use lib qw{ inc };
+use Test2::Plugin::INC_Jail;
 use My::Module::Test qw{
-    -inc
     cant_locate
     CHECK_MISSING_INFO
     $LOAD_ERROR_TEMPLATE

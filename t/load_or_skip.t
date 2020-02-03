@@ -12,8 +12,8 @@ BEGIN {
 }
 
 use lib qw{ inc };
+use Test2::Plugin::INC_Jail;
 use My::Module::Test qw{
-    -inc
     build_skip_reason
     cant_locate
     CHECK_MISSING_INFO

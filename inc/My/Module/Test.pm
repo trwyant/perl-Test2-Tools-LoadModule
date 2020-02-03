@@ -6,14 +6,13 @@ use strict;
 use warnings;
 
 use Carp qw{ croak };
-use Exporter ();
+use Exporter qw{ import };
 use Test2::V0;
 use Test2::Util qw{ pkg_to_file };
 
 our $VERSION = '0.000_902';
 
 our @EXPORT_OK = qw{
-    -inc
     build_skip_reason
     cant_locate
     CHECK_MISSING_INFO
@@ -24,8 +23,6 @@ our @EXPORT_OK = qw{
 # empty array. I find this nowhere documented, so I am checking for
 # both.
 use constant CHECK_MISSING_INFO	=> in_set( undef, array{ end; } );
-
-use constant CLASS	=> 'Test2::Tools::LoadModule';
 
 {
     # We jump through these hoops because we do not want to have the
@@ -49,53 +46,6 @@ sub cant_locate {
     my $fn = pkg_to_file( $module );
     my $msg = sprintf $LOAD_ERROR_TEMPLATE, "Can't locate $fn in \@INC";
     return match qr/ \A \Q$msg\E \b /smx;
-}
-
-# The @INC stuff is deeper magic than I like, but it lets me get rid
-# of Test::Without::Module as a testing dependency. The idea is that
-# Test2::Tools::LoadModule only sees t/lib/, but everyone else
-# can still load whatever they want. Modules already loaded at this
-# point will still appear to be loaded, no matter who requests them.
-
-sub import {
-    my ( $class, @arg ) = @_;
-
-    @arg
-	or goto &Exporter::import;
-
-    my $caller = caller;
-
-    my @rslt;
-
-    foreach ( @arg ) {
-	if ( '-inc' eq $_ ) {
-	    unshift @INC, sub {
-		my $lvl = 0;
-		while ( my $pkg = caller $lvl ) {
-		    if ( CLASS eq $pkg ) {
-			my $fh;
-			open $fh, '<', "t/lib/$_[1]"
-			    and return $] ge '5.020' ? ( \'', $fh ) : $fh;
-			croak "Can't locate $_[1] in \@INC";
-		    }
-		    # We iterate if in the original caller, because it
-		    # is possible the load is being done on behalf of
-		    # the original caller by the module under test,
-		    # using a stringy eval.
-		    $caller eq $pkg
-			or return;
-		} continue {
-		    $lvl++;
-		}
-		return;
-	    };
-	} else {
-	    push @rslt, $_;
-	}
-    }
-
-    @_ = ( $class, @rslt );
-    goto &Exporter::import;
 }
 
 1;

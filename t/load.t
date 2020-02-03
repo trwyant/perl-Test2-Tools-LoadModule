@@ -10,8 +10,8 @@ use Test2::V0 -target => 'Test2::Tools::LoadModule';
 use Test2::Tools::LoadModule qw{ :test2 :private };
 
 use lib qw{ inc };
+use Test2::Plugin::INC_Jail;
 use My::Module::Test qw{
-    -inc
     cant_locate
     CHECK_MISSING_INFO
 };
@@ -19,6 +19,7 @@ use My::Module::Test qw{
 use constant SUB_NAME	=> "${CLASS}::load_module_ok";
 
 my $line;
+
 
 {
     like
@@ -132,6 +133,7 @@ my $line;
     imported_ok( 'and_accounted_for' );
     not_imported_ok( 'under_the_tree' );
 }
+
 
 {
     my $module = 'Present';
@@ -340,7 +342,6 @@ SKIP: {
 	},
 	"Load $module, with non-existent import";
 }
-
 
 
 done_testing;
