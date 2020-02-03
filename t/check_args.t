@@ -20,7 +20,7 @@ foreach my $sub ( qw{
 
     my $code = __PACKAGE__->can( $sub );
 
-    is
+    like
 	dies { $line = __LINE__; $code->() },
 	make_msg( ERR_MODULE_UNDEF ),
 	"$sub() requires at least a module name";
@@ -38,17 +38,17 @@ foreach my $sub ( qw{
 
 	my $code = __PACKAGE__->can( $sub );
 
-	is
+	like
 	    dies { $line = __LINE__; $code->( -fubar => __PACKAGE__ ) },
 	    make_msg( 'Unknown option: fubar' ),
 	    "$sub() considers '-fubar' a bad option";
 
-	is
+	like
 	    dies { $line = __LINE__; $code->( __PACKAGE__, $version ) },
 	    make_msg( $vers_err ),
 	    "$sub() considers '$version' a bad version";
 
-	is
+	like
 	    dies { $line = __LINE__; $code->( __PACKAGE__, undef, {} ) },
 	    make_msg( ERR_IMPORT_BAD ),
 	    "$sub() considers {} a bad import list";
@@ -62,13 +62,13 @@ foreach my $sub ( qw{
 
     my $code = __PACKAGE__->can( $sub );
 
-    is
+    like
 	dies { $line = __LINE__; $code->( __PACKAGE__, undef, undef,
 		undef, 'plugh' ) },
 	make_msg( ERR_SKIP_NUM_BAD ),
 	"$sub() requires an unsigned integer skip number";
 
-    is
+    like
 	dies { $line = __LINE__; $code->( __PACKAGE__, undef, undef,
 		undef, undef, undef ) },
 	make_msg( "$sub() takes at most 5 arguments" ),
@@ -82,7 +82,7 @@ foreach my $sub ( qw{
 
     my $code = __PACKAGE__->can( $sub );
 
-    is
+    like
 	dies { $line = __LINE__; $code->( __PACKAGE__, undef, undef,
 		undef, undef ) },
 	make_msg( "$sub() takes at most 4 arguments" ),
@@ -94,7 +94,8 @@ done_testing;
 
 sub make_msg {
     my ( $msg ) = @_;
-    return sprintf "%s at %s line %d.\n", $msg, __FILE__, $line;
+    my $re = sprintf "%s at %s line %d", $msg, __FILE__, $line;
+    return qr< \A \Q$re\E >smx;
 }
 
 1;
