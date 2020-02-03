@@ -23,10 +23,11 @@ $LOAD_ERROR_TEMPLATE = TEST_MORE_LOAD_ERROR;
 
 my $line;
 
+
 {
     like
 	intercept {
-	    require_ok( CLASS ); $line = __LINE__;
+	    require_ok CLASS; $line = __LINE__;
 	},
 	array {
 
@@ -46,10 +47,32 @@ my $line;
 
 
 {
+    like
+	intercept {
+	    require_ok; $line = __LINE__;
+	},
+	array {
+
+	    event Pass => sub {
+		call name	=> "require $CLASS;";
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"Require previously-loaded default module ($CLASS)";
+}
+
+
+{
     my $module = 'Present';
     like
 	intercept {
-	    require_ok( $module ); $line = __LINE__;
+	    require_ok $module; $line = __LINE__;
 	},
 	array {
 
@@ -73,7 +96,7 @@ my $line;
 
     like
 	intercept {
-	    require_ok( $module ); $line = __LINE__;
+	    require_ok $module; $line = __LINE__;
 	},
 	array {
 

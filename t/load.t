@@ -38,7 +38,7 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS, no import";
+	"Load previously-loaded module $CLASS, default import";
 }
 
 
@@ -60,7 +60,7 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS, version 0, no import";
+	"Load previously-loaded module $CLASS, version 0, default import";
 }
 
 
@@ -82,7 +82,29 @@ my $line;
 
 	    end;
 	},
-	"Load previously-loaded module $CLASS, default import";
+	"Load previously-loaded module $CLASS, no import";
+}
+
+
+{
+    like
+	intercept {
+	    load_module_ok(); $line = __LINE__;
+	},
+	array {
+
+	    event Pass => sub {
+		call name	=> __build_load_eval( CLASS );
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"Load previously-loaded default module ($CLASS), default import";
 }
 
 

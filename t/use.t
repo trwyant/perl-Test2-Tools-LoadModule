@@ -23,6 +23,7 @@ $LOAD_ERROR_TEMPLATE = TEST_MORE_LOAD_ERROR;
 
 my $line;
 
+
 {
     like
 	intercept {
@@ -42,6 +43,28 @@ my $line;
 	    end;
 	},
 	"use previously-loaded module $CLASS, default import";
+}
+
+
+{
+    like
+	intercept {
+	    use_ok; $line = __LINE__;
+	},
+	array {
+
+	    event Pass => sub {
+		call name	=> __build_load_eval( CLASS );
+		call info	=> CHECK_MISSING_INFO;
+		prop file	=> __FILE__;
+		prop package	=> __PACKAGE__;
+		prop line	=> $line;
+		prop subname	=> SUB_NAME;
+	    };
+
+	    end;
+	},
+	"use previously-loaded default module ($CLASS), default import";
 }
 
 
@@ -67,8 +90,8 @@ my $line;
 	},
 	"Use not-previously-loaded module $module, with default import";
 
-    imported_ok( 'and_accounted_for' );
-    not_imported_ok( 'under_the_tree' );
+    imported_ok 'and_accounted_for';
+    not_imported_ok 'under_the_tree';
 }
 
 {
@@ -76,7 +99,7 @@ my $line;
     my @import = qw{ under_the_tree };
     like
 	intercept {
-	    use_ok( $module, @import ); $line = __LINE__;
+	    use_ok $module, @import; $line = __LINE__;
 	},
 	array {
 
@@ -93,7 +116,7 @@ my $line;
 	},
 	"use now-loaded module $module, with explicit import";
 
-    imported_ok( 'under_the_tree' );
+    imported_ok 'under_the_tree';
 }
 
 
@@ -102,7 +125,7 @@ my $line;
 
     like
 	intercept {
-	    use_ok( $module ); $line = __LINE__;
+	    use_ok $module; $line = __LINE__;
 	},
 	array {
 
@@ -135,7 +158,7 @@ my $line;
 
     like
 	intercept {
-	    use_ok( $module, $version ); $line = __LINE__;
+	    use_ok $module, $version; $line = __LINE__;
 	},
 	array {
 
@@ -169,7 +192,7 @@ my $line;
 
     like
 	intercept {
-	    use_ok( $module, @import ); $line = __LINE__;
+	    use_ok $module, @import; $line = __LINE__;
 	},
 	array {
 

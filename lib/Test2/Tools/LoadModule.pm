@@ -231,10 +231,10 @@ sub import {	## no critic (RequireArgUnpacking,ProhibitBuiltinHomonyms)
     return $class->export_to_level( 1, $class, @ARGV );
 }
 
-sub require_ok ($) {
+sub require_ok (;$) {
     my ( $module ) = @_;
     defined $module
-	or croak ERR_MODULE_UNDEF;
+	or $module = _caller_class();
     my $ctx = Test2::API::context();
     my $rslt = _load_module_ok( TEST_MORE_OPT,
 	$module, undef, undef, "require $module;",
@@ -244,10 +244,10 @@ sub require_ok ($) {
     return $rslt;
 }
 
-sub use_ok ($;@) {
+sub use_ok (;$@) {
     my ( $module, @arg ) = @_;
     defined $module
-	or croak ERR_MODULE_UNDEF;
+	or $module = _caller_class();
     my $version = ( defined $arg[0] && $arg[0] =~ LAX_VERSION ) ?
 	shift @arg : undef;
     my $ctx = Test2::API::context();
@@ -261,6 +261,14 @@ sub use_ok ($;@) {
 
 sub _make_pragma_key {
     return join '', __PACKAGE__, '/', $_;
+}
+
+sub _caller_class {
+    my ( $lvl ) = @_;
+    my ( $pkg ) = caller( $lvl || 1 );
+    my $code = $pkg->can( 'CLASS' )
+	or croak ERR_MODULE_UNDEF;
+    return $code->();
 }
 
 {
@@ -320,7 +328,7 @@ sub _validate_args {
     my ( $module, $version, $import, $name, @diag ) = @ARGV;
 
     defined $module
-	or croak ERR_MODULE_UNDEF;
+	or $module = _caller_class( 2 );
 
     if ( defined $version ) {
 	$version =~ LAX_VERSION
@@ -444,7 +452,9 @@ loaded. All arguments are optional but the first. The arguments are:
 
 =item $module - the module name
 
-This is required, and must not be C<undef>.
+This is the name of the module to be loaded. If unspecified or specified
+as C<undef>, it defaults to the caller's C<CLASS> if that exists;
+otherwise an exception is thrown.
 
 =item $ver - the desired version number, or undef
 
@@ -534,24 +544,30 @@ or subtest.
 
  require_ok $module;
 
-Prototype: C<($)>.
+Prototype: C<(;$)>.
 
 This subroutine is more or less the same as the L<Test::More|Test::More>
 subroutine of the same name. The argument is the name of the module to
 load. It's actually a C<use()> that gets issued, but without a version
 check or importing anything.
 
+The name of the module defaults to the caller's C<CLASS> if that exists;
+otherwise an exception is thrown.
+
 =head2 use_ok
 
  use_ok $module, @imports;
  use_ok $module, $version, @imports;
 
-Prototype: C<($;@)>.
+Prototype: C<(;$@)>.
 
 This subroutine is more or less the same as the L<Test::More|Test::More>
 subroutine of the same name. The arguments are the name of the module to
 load, and optional version (recognized by the equivalent of
 C<version::is_lax()>, and optional imports.
+
+The name of the module defaults to the caller's C<CLASS> if that exists;
+otherwise an exception is thrown.
 
 =head1 CONFIGURATION
 
