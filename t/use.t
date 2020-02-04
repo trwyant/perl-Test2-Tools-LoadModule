@@ -47,28 +47,6 @@ my $line;
 
 
 {
-    like
-	intercept {
-	    use_ok; $line = __LINE__;
-	},
-	array {
-
-	    event Pass => sub {
-		call name	=> __build_load_eval( CLASS );
-		call info	=> CHECK_MISSING_INFO;
-		prop file	=> __FILE__;
-		prop package	=> __PACKAGE__;
-		prop line	=> $line;
-		prop subname	=> SUB_NAME;
-	    };
-
-	    end;
-	},
-	"use previously-loaded default module ($CLASS), default import";
-}
-
-
-{
     my $module = 'Present';
 
     like

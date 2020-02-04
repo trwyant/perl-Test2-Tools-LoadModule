@@ -47,28 +47,6 @@ my $line;
 
 
 {
-    like
-	intercept {
-	    require_ok; $line = __LINE__;
-	},
-	array {
-
-	    event Pass => sub {
-		call name	=> "require $CLASS;";
-		call info	=> CHECK_MISSING_INFO;
-		prop file	=> __FILE__;
-		prop package	=> __PACKAGE__;
-		prop line	=> $line;
-		prop subname	=> SUB_NAME;
-	    };
-
-	    end;
-	},
-	"Require previously-loaded default module ($CLASS)";
-}
-
-
-{
     my $module = 'Present';
     like
 	intercept {
