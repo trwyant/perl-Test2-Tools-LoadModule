@@ -62,10 +62,12 @@ use constant CALLER_HINT_HASH	=> 10;
 
 use constant DEFAULT_LOAD_ERROR	=> '%s';
 
-use constant ERR_IMPORT_BAD	=> 'Import list must be an array reference, or undef';
+use constant ERR_IMPORT_BAD	=>
+	'Import list must be an array reference, or undef';
 use constant ERR_MODULE_UNDEF	=> 'Module name must be defined';
 use constant ERR_OPTION_BAD	=> 'Bad option';
-use constant ERR_SKIP_NUM_BAD	=> 'Number of skipped tests must be an unsigned integer';
+use constant ERR_SKIP_NUM_BAD	=>
+	'Number of skipped tests must be an unsigned integer';
 use constant ERR_VERSION_BAD	=> q/Version '%s' is invalid/;
 
 use constant HINTS_AVAILABLE	=> $] ge '5.010';
@@ -446,7 +448,7 @@ one of the following tags:
 Prototype: C<(@)>.
 
 This subroutine tests whether the specified module (B<not> file) can be
-loaded. All arguments are optional but the first. The arguments are:
+loaded. All arguments are optional. The arguments are:
 
 =over
 
@@ -467,7 +469,7 @@ If C<undef>, no version check is done.
 
 This argument specifies the import list. C<undef> means to import the
 default symbols, C<[]> means not to import anything, and a non-empty
-array reference mean to import the specified symbols.
+array reference means to import the specified symbols.
 
 =item $name - the test name, or undef
 

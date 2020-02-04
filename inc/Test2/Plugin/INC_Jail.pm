@@ -71,13 +71,13 @@ Test2::Plugin::INC_Jail - Create an @INC jail for the module under test
  use Test2::V0 -target => 'My::Module::Under::Test';
  
  # The following defaults the module under test to CLASS, and the
- # directory containing the modules it loads to t/inc
+ # directory containing the modules it loads to t/lib
  use Test2::Plugin::INC_Jail;
  
- # The following will be found anywhere in @INC exept t/inc
+ # The following will be found anywhere in @INC except t/lib
  use Test2::Tools::Explain; # Comes from anywhere in @INC
  
- # Test::Module will be found, if at all, ONLY in t/inc
+ # Test::Module will be found, if at all, ONLY in t/lib
  CLASS->do_something_that_loads( 'Test::Module' );
 
 =head1 DESCRIPTION
