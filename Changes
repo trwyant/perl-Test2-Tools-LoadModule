@@ -1,3 +1,7 @@
+0.000_904	2020-02-04	T. R. Wyant
+    Don't default module in require_ok() and use_ok(), because the
+    Test::More version of these does not.
+
 0.000_903	2020-02-03	T. R. Wyant
     Fix (I hope!) test failures due (I think) to Carp message
     formatting. It appears that different versions of Carp put or do not
