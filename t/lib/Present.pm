@@ -8,7 +8,7 @@ use warnings;
 use Carp;
 use Exporter qw{ import };
 
-our $VERSION = '0.001';
+our $VERSION = '0.001_01';
 $VERSION =~ s/ _ //smxg;
 
 our @EXPORT = qw{ and_accounted_for };
