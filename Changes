@@ -1,6 +1,4 @@
-0.002_001	2020-08-22	T. R. Wyant
-    NOT RELEASED TO CPAN
-
+0.002_01	2020-08-29	T. R. Wyant
     Disable feature 'signatures' for Perl >= 5.20 because we're using
     old-style signatures. This is probably paranoia, brought on by the
     Perl Porters' talk of changing defaults for Perl 7.
