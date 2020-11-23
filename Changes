@@ -1,4 +1,4 @@
-0.003_01	2020-11-16	T. R. Wyant
+0.004		2020-11-23	T. R. Wyant
     Add CAVEAT section to POD, about false passes caused by the test
     routines loading modules that the module being tested needs but
     forgot to load. Also deferred the loading of dependencies
