@@ -54,13 +54,12 @@ sub distribution {
     return $self->{distribution};
 }
 
-
 sub license {
     return 'perl';
 }
 
 sub meta_merge {
-    my ( $self, @extra ) = @_;
+    my ( undef, @extra ) = @_;
     return {
 	'meta-spec'	=> {
 	    version	=> 2,
@@ -68,7 +67,8 @@ sub meta_merge {
 	dynamic_config	=> 1,
 	resources	=> {
 	    bugtracker	=> {
-		web	=> 'https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues',
+		web	=> 'https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-LoadModule',
+		# web	=> 'https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues',
 		mailto  => 'wyant@cpan.org',
 	    },
 	    license	=> 'http://dev.perl.org/licenses/',
@@ -81,6 +81,7 @@ sub meta_merge {
 	@extra,
     };
 }
+
 
 sub module_name {
     return 'Test2::Tools::LoadModule';
@@ -129,7 +130,6 @@ sub requires {
 sub requires_perl {
     return 5.008001;
 }
-
 
 sub script_files {
     return [
@@ -290,7 +290,6 @@ distribution's version is to be derived.
 
 This class has no public attributes.
 
-
 =head1 ENVIRONMENT
 
 =head2 MAKING_MODULE_DISTRIBUTION
@@ -299,10 +298,10 @@ This environment variable should be set to a true value if you are
 making a distribution. This ensures that no configuration-specific
 information makes it into F<META.yml>.
 
-
 =head1 SUPPORT
 
 Support is by the author. Please file bug reports at
+L<https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-LoadModule>,
 L<https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues>, or in
 electronic mail to the author.
 

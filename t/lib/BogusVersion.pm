@@ -36,6 +36,7 @@ None whatsoever.
 =head1 SUPPORT
 
 Support is by the author. Please file bug reports at
+L<https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-LoadModule>,
 L<https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues>, or in
 electronic mail to the author.
 
