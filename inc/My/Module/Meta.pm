@@ -153,6 +153,7 @@ sub requires {
 	'File::Spec'	=> 0,		# Comes with Perl 5.8.1
 	'Getopt::Long'	=> 2.34,	# Comes with Perl 5.8.1
 	'Test2::API'	=> 0,
+	'Test2::API::Context'	=> 1.3020296,	# for pass_and_release()
 	'Test2::Util'	=> 0,
 	if		=> 0,		# Comes with Perl 5.8.1
 	strict		=> 0,		# Comes with Perl 5.8.1
