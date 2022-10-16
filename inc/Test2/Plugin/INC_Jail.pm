@@ -7,7 +7,7 @@ use warnings;
 
 use Carp;
 
-our $VERSION = '0.007';
+our $VERSION = '0.007_01';
 
 sub import {
     my ( undef, $test_class, @test_inc ) = @_;
