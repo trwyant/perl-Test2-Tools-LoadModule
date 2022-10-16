@@ -14,8 +14,9 @@ use Exporter 5.567;	# Comes with Perl 5.8.1.
 # use File::Find ();
 # use File::Spec ();
 # use Getopt::Long 2.34;	# Comes with Perl 5.8.1.
-use Test2::API ();
-use Test2::Util ();
+use Test2::API 1.302096 ();
+use Test2::API::Context 1.302096 ();	# for pass_and_release().
+use Test2::Util 1.302096 ();
 
 use base qw{ Exporter };
 

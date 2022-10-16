@@ -152,9 +152,9 @@ sub requires {
 	'File::Find'	=> 0,		# Comes with Perl 5.8.1
 	'File::Spec'	=> 0,		# Comes with Perl 5.8.1
 	'Getopt::Long'	=> 2.34,	# Comes with Perl 5.8.1
-	'Test2::API'	=> 0,
-	'Test2::API::Context'	=> 1.3020296,	# for pass_and_release()
-	'Test2::Util'	=> 0,
+	'Test2::API'	=> 1.302096,
+	'Test2::API::Context'	=> 1.302096,	# for pass_and_release()
+	'Test2::Util'	=> 1.302096,
 	if		=> 0,		# Comes with Perl 5.8.1
 	strict		=> 0,		# Comes with Perl 5.8.1
 	warnings	=> 0,		# Comes with Perl 5.8.1
