@@ -767,7 +767,8 @@ L<Test::More|Test::More>
 
 L<Test2::V0|Test2::V0>
 
-L<Test2::Require|Test2::Require>
+L<Test2::Require|Test2::Require>, especially
+L<Test2::Require::Module|Test2::Require::Module>.
 
 L<Test2::Manual::Testing::Migrating|Test2::Manual::Testing::Migrating>
 
