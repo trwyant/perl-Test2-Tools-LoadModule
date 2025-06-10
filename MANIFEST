@@ -1,5 +1,6 @@
 Build.PL
 Changes
+CONTRIBUTING
 eg/README
 eg/basic.t
 inc/My/Module/Build.pm
@@ -14,6 +15,7 @@ MANIFEST
 META.json
 META.yml
 README
+SECURITY
 t/basic.t
 t/build.t
 t/check_args.t
