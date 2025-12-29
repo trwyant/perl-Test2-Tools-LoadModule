@@ -8,8 +8,8 @@ inc/My/Module/Meta.pm
 inc/My/Module/Test.pm
 inc/Test2/Plugin/INC_Jail.pm
 lib/Test2/Tools/LoadModule.pm
-LICENSES/Artistic
-LICENSES/Copying
+LICENSE-Artistic
+LICENSE-GPL
 Makefile.PL
 MANIFEST
 META.json
