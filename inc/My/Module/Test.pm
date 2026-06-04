@@ -112,10 +112,8 @@ L<Test2::V0|Test2::V0>
 
 =head1 SUPPORT
 
-This module is unsupported in the usual sense, but if you think it is
-causing test failures, please file a bug report at
-L<https://rt.cpan.org/Public/Dist/Display.html?Name=Test2-Tools-LoadModule>,
-L<https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues>, or in
+Support is by the author. Please file bug reports at
+L<https://github.com/trwyant/perl-Test2-Tools-LoadModule/issues> or in
 electronic mail to the author.
 
 =head1 AUTHOR
